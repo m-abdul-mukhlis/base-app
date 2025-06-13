@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "453488482106",
+    "project_id": "base-app-9f90d",
+    "storage_bucket": "base-app-9f90d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:453488482106:android:eac3389fe6e931d62ba203",
+        "android_client_info": {
+          "package_name": "baseapp.bringthecode.id"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "453488482106-29crp2j43uprirldu0r92j13q2m94v2u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "baseapp.bringthecode.id",
+            "certificate_hash": "98f78c492849e002cfe950798a8fea448a716020"
+          }
+        },
+        {
+          "client_id": "453488482106-4bpiefd34rvbscsklv1egmnlr2ds29io.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8faw1Ay3khlwFuPuxRwbX6t-CscrpigM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "453488482106-4bpiefd34rvbscsklv1egmnlr2ds29io.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

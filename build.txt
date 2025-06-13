@@ -1,0 +1,7 @@
+eas update:configure
+eas build:configure
+
+eas build -p android --profile=development --local
+eas build -p android --profile=preview --local
+
+eas update --channel preview --message "test update"
