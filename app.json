@@ -8,11 +8,6 @@
     "scheme": "baseapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -25,7 +20,7 @@
       "googleServicesFile": "./assets/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffb125"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
@@ -51,12 +46,22 @@
       "@react-native-firebase/messaging",
       "@react-native-google-signin/google-signin",
       [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Roboto-Light.ttf",
+            "./assets/fonts/Roboto-Medium.ttf",
+            "./assets/fonts/Roboto-Regular.ttf"
+          ]
+        }
+      ],
+      [
         "expo-splash-screen",
         {
-          "backgroundColor": "#232323",
-          "image": "./assets/images/icon.png",
+          "backgroundColor": "#ffb125",
+          "image": "./assets/images/adaptive-icon.png",
           "dark": {
-            "image": "./assets/images/icon.png",
+            "image": "./assets/images/adaptive-icon.png",
             "backgroundColor": "#000000"
           },
           "imageWidth": 200
@@ -86,6 +91,7 @@
       "policy": "appVersion"
     },
     "updates": {
+      "enabled": true,
       "url": "https://u.expo.dev/6ac92ce3-b0f2-4750-84e9-5ef778ca0e0e"
     }
   }
