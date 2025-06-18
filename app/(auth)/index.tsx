@@ -1,9 +1,12 @@
 import ComponentButton from '@/components/Button';
+import ComponentsKeyboardAvoid from '@/components/KeyboardAvoid';
 import { Text, View } from '@/components/Themed';
 import ComponentUpdate from '@/components/Update';
+import UseFirestore from '@/components/useFirestore';
 import LibInput, { LibInputRef } from '@/lib/input';
 import { Ionicons } from "@expo/vector-icons";
 import { GoogleAuthProvider, getAuth, linkWithCredential, signInWithCredential, signInWithEmailAndPassword } from '@react-native-firebase/auth';
+import { serverTimestamp } from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { router } from 'expo-router';
 import React from 'react';
@@ -65,7 +68,12 @@ export default function AuthLoginScreen() {
     const password = passwordRef.current?.getText().trim() || ""
 
     signInWithEmailAndPassword(getAuth(), email, password).then((e) => {
-      setLoading(false)
+      UseFirestore().getCollectionIds(["genealogy", "genealogy", "users"], [["email", "==", email]], [], (ids) => {
+        const id = ids[0]
+        UseFirestore().updateDocument(["genealogy", "genealogy", "users", id], [{ key: "lastLogin", value: serverTimestamp() }], () => {
+          setLoading(false)
+        }, console.warn)
+      })
     }).catch(({ code, message }) => {
       setLoading(false)
       console.warn(message)
@@ -74,60 +82,62 @@ export default function AuthLoginScreen() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView>
+    <ComponentsKeyboardAvoid>
 
-        <View style={{ marginTop: 60, marginBottom: 50 }}>
-          <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 24, textAlign: "center", color: "#ec4e1e" }} >{"Login here"}</Text>
-          <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 18, textAlign: "center", color: "#121111", marginTop: 20 }} >{"Welcome back\nyou've been missed!"}</Text>
-        </View>
+      <View style={{ flex: 1 }}>
+        <ScrollView>
 
-        <LibInput
-          ref={emailRef}
-          icon="mail-outline"
-          returnKeyType="next"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          placeholder="Email..."
-          onSubmitEditing={() => passwordRef.current?.focus?.()}
-        />
-        <LibInput
-          ref={passwordRef}
-          icon="lock-closed-outline"
-          returnKeyType="done"
-          autoCapitalize="none"
-          placeholder="Password..."
-          secureTextEntry={!show}
-          onSubmitEditing={() => { signInWithEmail() }}
-          rightView={() =>
-            <Pressable onPress={() => setShow(!show)} style={{ position: 'absolute', right: 20 }}>
-              <Ionicons name={show ? "eye-off-outline" : 'eye-outline'} size={18} />
-            </Pressable>
-          }
-        />
+          <View style={{ marginTop: 60, marginBottom: 50 }}>
+            <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 24, textAlign: "center", color: "#ec4e1e" }} >{"Login here"}</Text>
+            <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 18, textAlign: "center", color: "#121111", marginTop: 20 }} >{"Welcome back\nyou've been missed!"}</Text>
+          </View>
 
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", marginHorizontal: 20, marginVertical: 10 }}>
-          <TouchableOpacity onPress={() => {
-            console.log("forgot password")
-          }} >
-            <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 14, textAlign: "right", color: "#ec4e1e" }} >{"forgot your password?"}</Text>
+          <LibInput
+            ref={emailRef}
+            icon="mail-outline"
+            returnKeyType="next"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholder="Email..."
+            onSubmitEditing={() => passwordRef.current?.focus?.()}
+          />
+          <LibInput
+            ref={passwordRef}
+            icon="lock-closed-outline"
+            returnKeyType="done"
+            autoCapitalize="none"
+            placeholder="Password..."
+            secureTextEntry={!show}
+            onSubmitEditing={() => { signInWithEmail() }}
+            rightView={() =>
+              <Pressable onPress={() => setShow(!show)} style={{ position: 'absolute', right: 20 }}>
+                <Ionicons name={show ? "eye-off-outline" : 'eye-outline'} size={18} />
+              </Pressable>
+            }
+          />
+
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", marginHorizontal: 20, marginVertical: 10 }}>
+            <TouchableOpacity onPress={() => {
+              console.log("forgot password")
+            }} >
+              <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 14, textAlign: "right", color: "#ec4e1e" }} >{"forgot your password?"}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ComponentButton
+            icons="arrow-forward"
+            title="Sign in"
+            loading={loading}
+            onPress={() => {
+              signInWithEmail()
+            }}
+          />
+
+          <TouchableOpacity onPress={() => { router.navigate('/(auth)/register') }} style={{ marginVertical: 30 }}>
+            <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 14, textAlign: "center", color: "#7f7f7f" }} >{"create new account"}</Text>
           </TouchableOpacity>
-        </View>
 
-        <ComponentButton
-          icons="arrow-forward"
-          title="Sign in"
-          loading={loading}
-          onPress={() => {
-            signInWithEmail()
-          }}
-        />
-
-        <TouchableOpacity onPress={() => { router.navigate('/(auth)/register') }} style={{ marginVertical: 30 }}>
-          <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 14, textAlign: "center", color: "#7f7f7f" }} >{"create new account"}</Text>
-        </TouchableOpacity>
-
-        {/* <View style={{ marginVertical: 30 }}>
+          {/* <View style={{ marginVertical: 30 }}>
           <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 14, textAlign: "center", color: "#ec4e1e", marginBottom: 10 }} >{"or continue with"}</Text>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 10 }}>
             <TouchableOpacity onPress={() => {
@@ -143,9 +153,10 @@ export default function AuthLoginScreen() {
             </TouchableOpacity>
           </View>
         </View> */}
-        <ComponentUpdate />
-      </ScrollView>
+          <ComponentUpdate />
+        </ScrollView>
 
-    </View>
+      </View>
+    </ComponentsKeyboardAvoid>
   )
 }

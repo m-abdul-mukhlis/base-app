@@ -107,6 +107,7 @@ const LibInput = forwardRef<LibInputRef, LibInputProps>((props, ref) => {
     const masked = mask(e);
     inputRef.current?.setNativeProps?.({ text: masked });
     textRef.current = masked;
+    if (error) clearError();
     props.onChangeText?.(unmask(masked));
   };
 

@@ -7,7 +7,6 @@ import userClass from "./class";
 
 export default function UserIndex() {
   const userData = userClass.get()
-  const availUserData = userData?.providerData.filter((x: any) => x?.displayName != null)?.[0]
   const { width } = useWindowDimensions()
   const itemWidth = (width - 50) * 0.333
   const menuWidth = (width - 80) * 0.206
@@ -28,9 +27,9 @@ export default function UserIndex() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flexDirection: "row", alignItems: "center", margin: 15 }}>
-        <Image source={{ uri: availUserData?.photoURL }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
+        <Image source={{ uri: userData?.photoURL }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
         <View style={{ marginLeft: 10, flex: 1 }}>
-          <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 12 }}>Hello {availUserData?.displayName}</Text>
+          <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 12 }}>Hello {userData?.name}</Text>
           <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Light", fontSize: 10 }}>{userData?.email}</Text>
         </View>
         <Pressable onPress={() => {

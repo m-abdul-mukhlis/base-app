@@ -1,5 +1,6 @@
 import ComponentButton from "@/components/Button";
 import ComponentHeader from "@/components/Header";
+import ComponentsKeyboardAvoid from "@/components/KeyboardAvoid";
 import { Text, View } from "@/components/Themed";
 import UseFirestore from "@/components/useFirestore";
 import LibInput, { LibInputRef } from "@/lib/input";
@@ -43,36 +44,37 @@ export default function GenealogyAdd() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <ComponentHeader title="TAMBAH KELUARGA" />
-      <ScrollView keyboardShouldPersistTaps="handled">
-        <LibInput
-          ref={inputRef}
-          placeholder="Nama"
-          autoCapitalize="words"
-          keyboardType="default"
-          onChangeText={(t) => {
-            setName(t)
+    <ComponentsKeyboardAvoid style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
+        <ComponentHeader title="TAMBAH KELUARGA" />
+        <ScrollView keyboardShouldPersistTaps="handled">
+          <LibInput
+            ref={inputRef}
+            placeholder="Nama"
+            autoCapitalize="words"
+            keyboardType="default"
+            onChangeText={(t) => {
+              setName(t)
+            }}
+          />
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: 'center', marginTop: 15 }}>
+            {
+              jekel.map((x, i) => (
+                <Pressable onPress={() => setGender(x)} key={i} style={{ padding: 10, backgroundColor: "#e6e6e6", marginRight: 10, width: 90, height: 90, borderRadius: 10, alignItems: "center", justifyContent: "center" }}>
+                  <FontAwesome name={x == "m" ? "male" : "female"} color={gender == x ? "orange" : "#000"} size={24} />
+                  <Text style={{ color: gender == x ? "orange" : "#000", fontSize: 10, marginTop: 10 }} >{x == "m" ? "Laki-Laki" : "Perempuan"}</Text>
+                </Pressable>
+              ))
+            }
+          </View>
+        </ScrollView>
+        <ComponentButton
+          title="SIMPAN"
+          onPress={() => {
+            doSave()
           }}
         />
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: 'center', marginTop: 15 }}>
-          {
-            jekel.map((x, i) => (
-              <Pressable onPress={() => setGender(x)} key={i} style={{ padding: 10, backgroundColor: "#e6e6e6", marginRight: 10, width: 90, height: 90, borderRadius: 10, alignItems: "center", justifyContent: "center" }}>
-                <FontAwesome name={x == "m" ? "male" : "female"} color={gender == x ? "orange" : "#000"} size={24} />
-                <Text style={{ color: gender == x ? "orange" : "#000", fontSize: 10, marginTop: 10 }} >{x == "m" ? "Laki-Laki" : "Perempuan"}</Text>
-              </Pressable>
-            ))
-          }
-        </View>
-      </ScrollView>
-      <ComponentButton
-        title="simpan"
-        onPress={() => {
-          doSave()
-        }}
-      />
-
-    </View>
+      </View>
+    </ComponentsKeyboardAvoid>
   )
 }

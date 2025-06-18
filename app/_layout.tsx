@@ -9,6 +9,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import UseFirestore from '@/components/useFirestore';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import userClass from './user/class';
@@ -62,8 +63,11 @@ function RootLayoutNav() {
   useEffect(() => {
     const subs = onAuthStateChanged(getAuth(), (user) => {
       if (!!user) {
-        userClass.set(user)
-        router.replace("/user")
+        UseFirestore().getCollectionWhere(["genealogy", "genealogy", "users"], [["email", "==", user?.email]], (data) => {
+          const dataUser = { ...data[0]?.data }
+          userClass.set(dataUser)
+          router.replace("/user")
+        })
       } else {
         router.replace("/(auth)")
       }
