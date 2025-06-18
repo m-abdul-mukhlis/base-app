@@ -16,24 +16,6 @@ export default function AuthLoginScreen() {
   const emailRef = React.useRef<LibInputRef>(null)
   const passwordRef = React.useRef<LibInputRef>(null)
 
-  // async function signInWithGoogle() {
-  //   let idToken
-  //   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
-  //   await GoogleSignin.signOut()
-  //   const signInResult = await GoogleSignin.signIn()
-
-  //   idToken = signInResult.data?.idToken
-  //   if (!idToken) {
-  //     throw new Error('No ID token found');
-  //   }
-  //   const googleCredential = GoogleAuthProvider.credential(idToken);
-  //   const user = getAuth().currentUser
-  //   if (!!user) {
-  //     linkWithCredential(user, googleCredential)
-  //   }
-  //   return signInWithCredential(getAuth(), googleCredential);
-  // }
-
   async function signInWithGoogle() {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
     await GoogleSignin.signOut(); // Optional: only if you want a clean sign-in
@@ -145,7 +127,7 @@ export default function AuthLoginScreen() {
           <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 14, textAlign: "center", color: "#7f7f7f" }} >{"create new account"}</Text>
         </TouchableOpacity>
 
-        <View style={{ marginVertical: 30 }}>
+        {/* <View style={{ marginVertical: 30 }}>
           <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 14, textAlign: "center", color: "#ec4e1e", marginBottom: 10 }} >{"or continue with"}</Text>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 10 }}>
             <TouchableOpacity onPress={() => {
@@ -153,14 +135,14 @@ export default function AuthLoginScreen() {
             }} style={{ backgroundColor: "#f1f1f1", borderRadius: 10, padding: 15, marginHorizontal: 5 }}>
               <Ionicons name="logo-google" color={"#121111"} size={18} />
             </TouchableOpacity>
-            {/* <TouchableOpacity onPress={() => { }} style={{ backgroundColor: "#f1f1f1", borderRadius: 10, padding: 15, marginHorizontal: 5 }}>
+            <TouchableOpacity onPress={() => { }} style={{ backgroundColor: "#f1f1f1", borderRadius: 10, padding: 15, marginHorizontal: 5 }}>
               <Ionicons name="logo-apple" color={"#121111"} size={18} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { }} style={{ backgroundColor: "#f1f1f1", borderRadius: 10, padding: 15, marginHorizontal: 5 }}>
               <Ionicons name="logo-facebook" color={"#121111"} size={18} />
-            </TouchableOpacity> */}
+            </TouchableOpacity>
           </View>
-        </View>
+        </View> */}
         <ComponentUpdate />
       </ScrollView>
 

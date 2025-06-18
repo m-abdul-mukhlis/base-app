@@ -7,7 +7,7 @@ export interface ComponentButtonProps {
   onPress?: () => void,
   title: string,
   textStyle?: any,
-  icons: string,
+  icons?: string,
   iconColor?: string
   iconSize?: number,
   style?: any

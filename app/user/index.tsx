@@ -1,69 +1,64 @@
-import ComponentButton from "@/components/Button";
 import { Text, View } from "@/components/Themed";
-import ComponentUpdate from "@/components/Update";
-import { getAuth, GoogleAuthProvider, linkWithCredential } from "@react-native-firebase/auth";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { Alert, ScrollView } from "react-native";
+import { router } from "expo-router";
+import { Pressable, ScrollView, TouchableOpacity, useWindowDimensions } from "react-native";
 import userClass from "./class";
 
 export default function UserIndex() {
   const userData = userClass.get()
+  const availUserData = userData?.providerData.filter((x: any) => x?.displayName != null)?.[0]
+  const { width } = useWindowDimensions()
+  const itemWidth = (width - 50) * 0.333
+  const menuWidth = (width - 80) * 0.206
 
-  async function signOutGoogle() {
-    userClass.delete()
-    try {
-      await GoogleSignin.revokeAccess()
-    } catch (error) {
-      console.warn(1, error)
-    }
-    try {
-      await GoogleSignin.signOut()
-    } catch (error) {
-      console.warn(2, error)
-    }
-    try {
-      await getAuth().signOut()
-    } catch (error) {
-      console.warn(3, error)
-    }
+  const ic = ["american-football", "boat-outline", "calendar-number-outline", "chatbubbles-outline", "cube-outline"]
+
+  const Items = (x: string, i: number) => {
+    return (
+      <TouchableOpacity onPress={() => {
+
+      }} key={i} style={{ width: menuWidth, height: menuWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
+        {/* @ts-ignore */}
+        <Ionicons name={x} size={40} color={"#909090"} />
+      </TouchableOpacity>
+    )
   }
-
-  const linkGoogleAccount = async () => {
-    try {
-      const user = getAuth().currentUser;
-      const { data } = await GoogleSignin.signIn();
-      const credential = GoogleAuthProvider.credential(data?.idToken);
-      if (user)
-        await linkWithCredential(user, credential);
-    } catch (error) {
-      Alert.alert("Oops", JSON.stringify(error))
-    }
-  }
-
 
   return (
     <View style={{ flex: 1 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", margin: 15 }}>
+        <Image source={{ uri: availUserData?.photoURL }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
+        <View style={{ marginLeft: 10, flex: 1 }}>
+          <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 12 }}>Hello {availUserData?.displayName}</Text>
+          <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Light", fontSize: 10 }}>{userData?.email}</Text>
+        </View>
+        <Pressable onPress={() => {
+          router.push("/modal")
+        }}>
+          <Ionicons name="menu-outline" size={20} />
+        </Pressable>
+      </View>
       <ScrollView>
-        <Text>Hello {userData?.displayName}</Text>
-        <Text>{userData?.email}</Text>
-        <Image source={{ uri: userData?.photoURL }} style={{ width: 50, height: 50 }} />
-        <ComponentUpdate />
+
+        <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 15, flexWrap: "wrap" }}>
+          <TouchableOpacity onPress={() => {
+            router.navigate("/genealogy")
+          }} style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
+            <FontAwesome5 name="tree" size={60} color={"#909090"} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => {
+          }} style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="logo-firebase" size={60} color={"#909090"} />
+          </TouchableOpacity>
+          <View style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5 }} />
+        </View>
+
+        <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 15, flexWrap: "wrap" }}>
+          {ic.map(Items)}
+        </View>
+
       </ScrollView>
-      <ComponentButton
-        icons="arrow-forward"
-        title="link google"
-        onPress={() => {
-          linkGoogleAccount()
-        }}
-      />
-      <ComponentButton
-        icons="arrow-forward"
-        title="logout"
-        onPress={() => {
-          signOutGoogle()
-        }}
-      />
     </View>
   )
 }
