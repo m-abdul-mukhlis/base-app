@@ -2,15 +2,12 @@ import ComponentButton from '@/components/Button';
 import ComponentsKeyboardAvoid from '@/components/KeyboardAvoid';
 import { Text, View } from '@/components/Themed';
 import ComponentUpdate from '@/components/Update';
-import UseFirestore from '@/components/useFirestore';
 import LibInput, { LibInputRef } from '@/lib/input';
+import { useSignIn } from '@clerk/clerk-expo';
 import { Ionicons } from "@expo/vector-icons";
-import { GoogleAuthProvider, getAuth, linkWithCredential, signInWithCredential, signInWithEmailAndPassword } from '@react-native-firebase/auth';
-import { serverTimestamp } from '@react-native-firebase/firestore';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { router } from 'expo-router';
 import React from 'react';
-import { Alert, Pressable, ScrollView, TouchableOpacity } from 'react-native';
+import { Pressable, ScrollView, TouchableOpacity } from 'react-native';
 
 
 export default function AuthLoginScreen() {
@@ -19,37 +16,13 @@ export default function AuthLoginScreen() {
   const emailRef = React.useRef<LibInputRef>(null)
   const passwordRef = React.useRef<LibInputRef>(null)
 
-  async function signInWithGoogle() {
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    await GoogleSignin.signOut(); // Optional: only if you want a clean sign-in
-
-    const { data } = await GoogleSignin.signIn();
-    const idToken = data?.idToken
-    if (!idToken) throw new Error('No ID token found');
-
-    const googleCredential = GoogleAuthProvider.credential(idToken);
-    const user = getAuth().currentUser;
-
-    if (!!user) {
-      try {
-        await linkWithCredential(user, googleCredential);
-        console.log("✅ Google account linked");
-      } catch (e: any) {
-        if (e.code === 'auth/credential-already-in-use') {
-          console.warn("⚠️ Google already linked to another account.");
-          // You might choose to sign in instead:
-          await signInWithCredential(getAuth(), googleCredential);
-        } else {
-          console.error(e.message);
-        }
-      }
-    } else {
-      await signInWithCredential(getAuth(), googleCredential);
-    }
-  }
-
+  const { signIn, setActive, isLoaded } = useSignIn()
 
   function signInWithEmail() {
+    emailRef.current?.setText("mukhlis.esoftplay@gmail.com")
+    // passwordRef.current?.setText("123456")
+    passwordRef.current?.setText("Mukhlis123.")
+
     if (emailRef.current?.getText() == "") {
       emailRef.current?.setError?.("Please input your email")
       return
@@ -67,18 +40,27 @@ export default function AuthLoginScreen() {
     const email = emailRef.current?.getText().trim().toLocaleLowerCase() || ""
     const password = passwordRef.current?.getText().trim() || ""
 
-    signInWithEmailAndPassword(getAuth(), email, password).then((e) => {
-      UseFirestore().getCollectionIds(["genealogy", "genealogy", "users"], [["email", "==", email]], [], (ids) => {
-        const id = ids[0]
-        UseFirestore().updateDocument(["genealogy", "genealogy", "users", id], [{ key: "lastLogin", value: serverTimestamp() }], () => {
-          setLoading(false)
-        }, console.warn)
+    onSignInPress(email, password)
+  }
+
+  const onSignInPress = async (email: string, password: string) => {
+    if (!isLoaded) return
+
+    try {
+      const signInAttempt = await signIn.create({
+        identifier: email,
+        password,
       })
-    }).catch(({ code, message }) => {
-      setLoading(false)
-      console.warn(message)
-      Alert.alert("Oops", message)
-    })
+
+      if (signInAttempt.status === 'complete') {
+        await setActive({ session: signInAttempt.createdSessionId })
+        router.replace('/user')
+      } else {
+        console.error(JSON.stringify(signInAttempt, null, 2))
+      }
+    } catch (err) {
+      console.error(JSON.stringify(err, null, 2))
+    }
   }
 
   return (
@@ -137,22 +119,6 @@ export default function AuthLoginScreen() {
             <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 14, textAlign: "center", color: "#7f7f7f" }} >{"create new account"}</Text>
           </TouchableOpacity>
 
-          {/* <View style={{ marginVertical: 30 }}>
-          <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 14, textAlign: "center", color: "#ec4e1e", marginBottom: 10 }} >{"or continue with"}</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 10 }}>
-            <TouchableOpacity onPress={() => {
-              signInWithGoogle()
-            }} style={{ backgroundColor: "#f1f1f1", borderRadius: 10, padding: 15, marginHorizontal: 5 }}>
-              <Ionicons name="logo-google" color={"#121111"} size={18} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => { }} style={{ backgroundColor: "#f1f1f1", borderRadius: 10, padding: 15, marginHorizontal: 5 }}>
-              <Ionicons name="logo-apple" color={"#121111"} size={18} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => { }} style={{ backgroundColor: "#f1f1f1", borderRadius: 10, padding: 15, marginHorizontal: 5 }}>
-              <Ionicons name="logo-facebook" color={"#121111"} size={18} />
-            </TouchableOpacity>
-          </View>
-        </View> */}
           <ComponentUpdate />
         </ScrollView>
 

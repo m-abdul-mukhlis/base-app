@@ -3,31 +3,36 @@ const { withAndroidManifest } = require("@expo/config-plugins");
 const withCustomAndroidManifest = (config) => {
   return withAndroidManifest(config, (config) => {
     const androidManifest = config.modResults.manifest;
+    const app = androidManifest?.application?.[0];
 
-    // Find the <application> tag and add the meta-data with tools:replace
-    if (androidManifest && androidManifest.application && androidManifest.application[0]) {
-      const application = androidManifest.application[0];
+    if (!app) return config;
 
-      const metaData = application["meta-data"] || [];
-      const existingMetaData = metaData.find(
-        (meta) => meta.$["android:name"] === "com.google.firebase.messaging.default_notification_color"
-      );
+    // Ensure xmlns:tools is declared
+    androidManifest.$ = androidManifest.$ || {};
+    if (!androidManifest.$["xmlns:tools"]) {
+      androidManifest.$["xmlns:tools"] = "http://schemas.android.com/tools";
+    }
 
-      if (existingMetaData) {
-        existingMetaData.$["tools:replace"] = "android:resource";
-      } else {
-        // Add a new <meta-data> tag if not found
-        application["meta-data"] = [
-          ...metaData,
-          {
-            $: {
-              "android:name": "com.google.firebase.messaging.default_notification_color",
-              "android:resource": "@color/notification_icon_color",
-              "tools:replace": "android:resource",
-            },
-          },
-        ];
-      }
+    app["meta-data"] = app["meta-data"] || [];
+
+    const metaName = "com.google.firebase.messaging.default_notification_color";
+    const metaResource = "@color/notification_icon_color";
+
+    const existingMeta = app["meta-data"].find(
+      (meta) => meta.$["android:name"] === metaName
+    );
+
+    if (existingMeta) {
+      existingMeta.$["android:resource"] = metaResource;
+      existingMeta.$["tools:replace"] = "android:resource";
+    } else {
+      app["meta-data"].push({
+        $: {
+          "android:name": metaName,
+          "android:resource": metaResource,
+          "tools:replace": "android:resource",
+        },
+      });
     }
 
     return config;

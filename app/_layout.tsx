@@ -1,18 +1,23 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { getAuth, onAuthStateChanged } from "@react-native-firebase/auth";
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { router, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
-import UseFirestore from '@/components/useFirestore';
+import { ClerkProvider } from '@clerk/clerk-expo';
+import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import userClass from './user/class';
+
+import { Buffer } from 'buffer';
+
+if (typeof global.btoa === 'undefined') {
+  global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
+}
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -60,29 +65,16 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
-  useEffect(() => {
-    const subs = onAuthStateChanged(getAuth(), (user) => {
-      if (!!user) {
-        UseFirestore().getCollectionWhere(["genealogy", "genealogy", "users"], [["email", "==", user?.email]], (data) => {
-          const dataUser = { ...data[0]?.data }
-          userClass.set(dataUser)
-          router.replace("/user")
-        })
-      } else {
-        router.replace("/(auth)")
-      }
-    })
-    return () => subs()
-  }, [])
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="user" options={{ headerShown: false }} />
-        <Stack.Screen name="genealogy" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
-      </Stack>
-    </ThemeProvider>
+    <ClerkProvider tokenCache={tokenCache} publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack initialRouteName='user' screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="user" options={{ headerShown: false }} />
+          <Stack.Screen name="genealogy" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
+        </Stack>
+      </ThemeProvider>
+    </ClerkProvider>
   );
 }

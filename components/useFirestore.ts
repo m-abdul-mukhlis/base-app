@@ -1,3 +1,4 @@
+import { createUserWithEmailAndPassword, FirebaseAuthTypes, getAuth, signInWithEmailAndPassword } from '@react-native-firebase/auth';
 import { addDoc, collection, deleteDoc, doc, FirebaseFirestoreTypes, getDoc, getDocs, getFirestore, limit, onSnapshot, orderBy, query, setDoc, startAfter, updateDoc, where, writeBatch } from '@react-native-firebase/firestore';
 
 const conditionIsNotValid = (where: any[]): boolean => {
@@ -15,6 +16,24 @@ const makeid = (length: number) => {
   return result;
 }
 
+const generatePassword = (unique: string, email: string): string => {
+  let updatedEmail = '';
+  const atIndex = email?.indexOf?.('@');
+  const first = email?.substring?.(0, atIndex);
+  const last = email?.substring?.(atIndex + 1);
+  const minLength = Math.min(unique?.length || 0, first?.length || 0);
+
+  for (let i = 0; i < minLength; i++) {
+    updatedEmail += unique[i] + first[i];
+  }
+  if (unique.length > minLength) {
+    updatedEmail += unique.slice(minLength);
+  } else if (first.length > minLength) {
+    updatedEmail += first.slice(minLength);
+  }
+  return updatedEmail + "@" + last;
+}
+
 let lastVisible: any = null
 
 type Condition = [fieldPath?: string | number | FirebaseFirestoreTypes.FieldPath, opStr?: FirebaseFirestoreTypes.WhereFilterOp, value?: any];
@@ -24,6 +43,69 @@ export default function UseFirestore() {
   const castPathToString = (path: any[]): string => {
     const strings = path?.map?.(x => String(x)) || []
     return strings.join("/")
+  }
+
+  const register = async (
+    email: string,
+    password: string,
+    callback: (credential: FirebaseAuthTypes.UserCredential) => void
+  ) => {
+    const authInstance = getAuth();
+    try {
+      const credential = await createUserWithEmailAndPassword(authInstance, email, password);
+      callback(credential);
+    } catch (error: any) {
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          return login(email, password, callback);
+        case 'auth/invalid-email':
+          console.error('Invalid email address format.');
+          break;
+        case 'auth/unknown':
+          console.warn('Unknown error occurred. Retrying registration.');
+          return register(email, password, callback);
+        case 'auth/configuration-not':
+          console.error('Authentication is not configured for this Firebase project.');
+          break;
+        case 'auth/operation-not-allowed':
+          console.error('Sign-in provider is not enabled. Check Firebase console.');
+          break;
+        default:
+          console.error('Registration error:', error.message || error);
+      }
+    }
+  }
+
+  const login = async (
+    email: string,
+    password: string,
+    callback: (credential: FirebaseAuthTypes.UserCredential) => void,
+  ) => {
+    const authInstance = getAuth();
+    try {
+      const credential = await signInWithEmailAndPassword(authInstance, email, password);
+      callback(credential);
+    } catch (error: any) {
+      switch (error.code) {
+        case 'auth/user-not-found':
+          console.error('No user found with this email.');
+          break;
+        case 'auth/wrong-password':
+          console.error('Incorrect password. Please try again.');
+          break;
+        case 'auth/too-many-requests':
+          console.warn('Too many attempts. Please try again later.');
+          break;
+        case 'auth/invalid-email':
+          console.error('Invalid email address format.');
+          break;
+        case 'auth/network-request-failed':
+          console.error('Network error. Please check your connection.');
+          break;
+        default:
+          console.error('Login error:', error.message || error);
+      }
+    }
   }
 
   const getDocument = (path: string[], callback: (data: { id: string, data: any }) => void, error?: () => void) => {
@@ -339,6 +421,8 @@ export default function UseFirestore() {
     listenCollection,
     paginate,
     castPathToString,
-    generateId
+    generateId,
+    generatePassword,
+    register
   }
 }

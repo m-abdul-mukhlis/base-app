@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "base-app",
+    "name": "base app",
     "slug": "base-app",
-    "version": "1",
+    "version": "2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "baseapp",
@@ -16,7 +16,7 @@
     },
     "android": {
       "package": "baseapp.bringthecode.id",
-      "versionCode": 1,
+      "versionCode": 2,
       "googleServicesFile": "./assets/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -24,7 +24,7 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.CAMERA",
+        "android.permission.INTERNET",
         "android.permission.CAMERA"
       ]
     },
@@ -67,7 +67,14 @@
           "imageWidth": 200
         }
       ],
-      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
       "expo-secure-store",
       [
         "react-native-vision-camera",
@@ -75,8 +82,17 @@
           "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera."
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/iconNotif.png",
+          "color": "#232323"
+        }
+      ],
+      "expo-web-browser",
       "./heapsize.js",
-      "./tools_replace"
+      "./tools_replace",
+      "./fcmIcon"
     ],
     "experiments": {
       "typedRoutes": true
