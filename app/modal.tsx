@@ -12,8 +12,12 @@ export default function ModalScreen() {
   const { signOut } = useClerk()
 
   async function signOutGoogle() {
-    await signOut()
-    await getAuth().signOut()
+    try {
+      await signOut()
+      await getAuth().signOut()
+    } catch (error) {
+      console.warn(error)
+    }
   }
 
   return (

@@ -1,6 +1,6 @@
 import userClass from '@/app/user/class';
 import useStorage from '@/components/useStorage';
-import messaging from '@react-native-firebase/messaging';
+import { AuthorizationStatus, getMessaging } from '@react-native-firebase/messaging';
 import * as Notifications from 'expo-notifications';
 import { Platform } from "react-native";
 
@@ -65,11 +65,11 @@ function checkNotifStorage(title?: string) {
   })
 }
 
-messaging().setBackgroundMessageHandler(async (remoteMessage: any) => {
+getMessaging().setBackgroundMessageHandler(async (remoteMessage: any) => {
   useStorage.setItem('remoteMessage', JSON.stringify(remoteMessage))
 });
 
-messaging().onTokenRefresh((token) => {
+getMessaging().onTokenRefresh((token) => {
   useStorage.getItem("token").then((old: any) => {
     if (old != token) {
       userClass.sendToken(token)
@@ -112,8 +112,8 @@ const libNotification = {
       checkNotifStorage()
     }, 500);
 
-    let unMessage = messaging().onMessage(handlePushNotification);
-    let unonNotificationOpenedApp = messaging().onNotificationOpenedApp((remoteMessage) => {
+    let unMessage = getMessaging().onMessage(handlePushNotification);
+    let unonNotificationOpenedApp = getMessaging().onNotificationOpenedApp((remoteMessage) => {
       if (remoteMessage) {
         useStorage.setItem('remoteMessage', JSON.stringify(remoteMessage))
       }
@@ -122,7 +122,7 @@ const libNotification = {
       }, 500);
     });
 
-    messaging().getInitialNotification().then((remoteMessage) => {
+    getMessaging().getInitialNotification().then((remoteMessage) => {
       if (remoteMessage) {
         useStorage.setItem('remoteMessage', JSON.stringify(remoteMessage))
       }
@@ -149,11 +149,11 @@ const libNotification = {
           android: {}
         });
       }
-      const authStatus = await messaging().requestPermission();
-      const enabled = authStatus === messaging.AuthorizationStatus.AUTHORIZED || authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      const authStatus = await getMessaging().requestPermission();
+      const enabled = authStatus === AuthorizationStatus.AUTHORIZED || authStatus === AuthorizationStatus.PROVISIONAL;
       if (enabled) {
-        await messaging().registerDeviceForRemoteMessages()
-        messaging()
+        await getMessaging().registerDeviceForRemoteMessages()
+        getMessaging()
           .getToken()
           .then(
             token => {
