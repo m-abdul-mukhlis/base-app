@@ -8,16 +8,12 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import libNotification from '@/lib/notification';
 import { ClerkProvider } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { Buffer } from 'buffer';
-
-if (typeof global.btoa === 'undefined') {
-  global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
-}
+import userClass from './user/class';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -64,6 +60,12 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+
+  useEffect(libNotification.effect, [])
+
+  useEffect(()=>{
+    userClass.pushToken()
+  },[])
 
   return (
     <ClerkProvider tokenCache={tokenCache} publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}>

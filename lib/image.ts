@@ -2,7 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 
 const libImage = {
-  fromCamera(): Promise<any> {
+  fromCamera(options?: { maxDimension?: number }): Promise<string> {
     return new Promise((_r) => {
       const timer = setTimeout(async () => {
         const cameraPermission = await ImagePicker.getCameraPermissionsAsync();
@@ -36,14 +36,15 @@ const libImage = {
             } else if (res?.assets?.[0]) {
               result = { ...res, ...res.assets[0] }
             }
-            _r(result)
+            let imageUri = await this.processImage(result, options?.maxDimension)
+            _r(imageUri)
           }
         })
         clearTimeout(timer)
       }, 1);
     })
   },
-  fromGallery(): Promise<any> {
+  fromGallery(options?: { maxDimension?: number }): Promise<string | string[]> {
     return new Promise((_r) => {
       const timer = setTimeout(async () => {
         const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
@@ -68,11 +69,37 @@ const libImage = {
             } else if (z?.assets?.[0]) {
               x = { ...z, ...z.assets[0] }
             }
-            _r(x)
+            let imageUri = await this.processImage(x, options?.maxDimension)
+            _r(imageUri)
           }
         })
         clearTimeout(timer)
       }, 1)
+    })
+  },
+  processImage(result: any, maxDimension?: number): Promise<string> {
+    return new Promise((r) => {
+      const timer = setTimeout(async () => {
+
+        const formData = new FormData();
+        formData.append('image', {
+          uri: result?.uri,
+          name: 'image.jpg',
+          type: 'image/jpeg'
+        });
+
+        const response = await fetch("https://base-app-backend-production.up.railway.app/upload", {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        const json = await response.json();
+        r(json.url)
+
+        clearTimeout(timer)
+      }, 1);
     })
   }
 }

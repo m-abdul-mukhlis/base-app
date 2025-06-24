@@ -3,12 +3,14 @@ import libImage from "@/lib/image";
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import { useState } from "react";
 import { Pressable, ScrollView, TouchableOpacity, useWindowDimensions } from "react-native";
 import userClass from "./class";
 
 export default function UserIndex() {
   const userData = userClass.get()
   const { width } = useWindowDimensions()
+  const [image, setImage] = useState('')
   const itemWidth = (width - 50) * 0.333
   const menuWidth = (width - 80) * 0.206
   const ic = ["american-football", "boat-outline", "calendar-number-outline", "chatbubbles-outline", "cube-outline"]
@@ -48,14 +50,14 @@ export default function UserIndex() {
           </TouchableOpacity>
           <TouchableOpacity onPress={() => {
             libImage.fromCamera().then((res) => {
-              console.log({ res })
+              setImage(res)
             })
           }} style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="camera" size={60} color={"#909090"} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => {
             libImage.fromGallery().then((res) => {
-              console.log({ res })
+              setImage(res)
             })
           }} style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="image-outline" size={60} color={"#909090"} />
@@ -67,6 +69,16 @@ export default function UserIndex() {
               contentFit="contain"
             />
           </View>
+          {
+            image != "" &&
+            <View style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
+              <Image
+                source={{ uri: image }}
+                style={{ width: itemWidth - 20, height: itemWidth - 20 }}
+                contentFit="contain"
+              />
+            </View>
+          }
         </View>
 
         <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 15, flexWrap: "wrap" }}>

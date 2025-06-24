@@ -1,4 +1,6 @@
+import UseFirestore from "@/components/useFirestore"
 import useStorage from "@/components/useStorage"
+import libNotification from "@/lib/notification"
 
 const userClass = {
   set(data: any) {
@@ -10,6 +12,18 @@ const userClass = {
   },
   delete() {
     useStorage.removeItem("user-class")
+  },
+  sendToken(token: string) {
+    UseFirestore().addCollection(["genealogy", "genealogy", "token"], { token: String(token) }, () => {
+      useStorage.setItem("token", token)
+    })
+  },
+  pushToken(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      libNotification.requestPermission(async (token) => {
+        resolve(await this.sendToken(token))
+      })
+    })
   }
 }
 
