@@ -31,9 +31,11 @@ export default function UserLayout() {
   }, [])
 
   function updateLastLogin(email: string) {
-    if (!userClass.get?.()?.email) {
+    if (userClass.get?.()?.email) {
       UseFirestore().getCollectionWhere(["genealogy", "genealogy", "users"], [["email", "==", email]], (data) => {
-        userClass.set({ ...data[0].data })
+        if (data.length > 0) {
+          userClass.set({ ...data[0].data })
+        }
         const id = data[0].id
         // UseFirestore().updateDocument(["genealogy", "genealogy", "users", id], [{
         //   key: "lastLogin",

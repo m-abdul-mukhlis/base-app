@@ -35,7 +35,6 @@ export default function GenealogyAdd() {
       created: serverTimestamp(),
       par_rel: par_rel.split(",")
     }, () => {
-      console.log("saved")
       setName("")
       inputRef.current?.setText("")
       setLoading(false)
