@@ -13,6 +13,7 @@ export default function UserLayout() {
   const user = useUser()
 
   useEffect(() => {
+    userClass.pushToken()
     const email = user?.user?.primaryEmailAddress?.emailAddress
 
     const subs = onAuthStateChanged(getAuth(), (user) => {
@@ -31,7 +32,7 @@ export default function UserLayout() {
   }, [])
 
   function updateLastLogin(email: string) {
-    if (userClass.get?.()?.email) {
+    if (!userClass.get?.()?.email && email) {
       UseFirestore().getCollectionWhere(["genealogy", "genealogy", "users"], [["email", "==", email]], (data) => {
         if (data.length > 0) {
           userClass.set({ ...data[0].data })
@@ -52,6 +53,8 @@ export default function UserLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name='test' options={{ headerShown: false }} />
+    </Stack>
   );
 }

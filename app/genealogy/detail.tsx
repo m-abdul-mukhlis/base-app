@@ -4,7 +4,7 @@ import { Text, View } from "@/components/Themed";
 import UseFirestore from "@/components/useFirestore";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable } from "react-native";
 
@@ -13,12 +13,16 @@ export default function GenealogyDetail() {
   const [relation, setRelation] = useState<any>()
   const [child, setChild] = useState<any>()
   const [parents, setParents] = useState<any>()
+  const navigation = useNavigation()
+  const focus = navigation.isFocused()
 
   console.log(id, id, name, gender, par_rel, rel_id)
 
   useEffect(() => {
-    getData()
-  }, [])
+    if (focus) {
+      getData()
+    }
+  }, [navigation])
 
   function getData() {
     if (rel_id && rel_id != "0") {
@@ -114,7 +118,12 @@ export default function GenealogyDetail() {
               )
             })
           }
-          <Pressable onPress={() => { }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
+          <Pressable onPress={() => {
+            router.push({
+              pathname: '/genealogy/add',
+              params: { id: id }
+            })
+          }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6", alignItems: "center", justifyContent: "center" }}>
               <Ionicons name="add" size={30} />
             </View>
@@ -128,7 +137,12 @@ export default function GenealogyDetail() {
           {
             child && child.length > 0 && child.map((item: any, i: number) => {
               return (
-                <Pressable key={i} onPress={() => { }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
+                <Pressable key={i} onPress={() => {
+                  router.push({
+                    pathname: '/genealogy/detail',
+                    params: { ...item }
+                  })
+                }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
                   <Image source={{ uri: "" }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
                   <View style={{ marginLeft: 10, flex: 1 }}>
                     <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 12 }}>{item?.name}</Text>

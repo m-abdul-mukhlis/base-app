@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import 'react-native-reanimated';
 
@@ -49,10 +50,12 @@ export default function RootLayout() {
 
   return (
     <KeyboardProvider>
-      <SafeAreaView style={{ flex: 1 }}>
-        <StatusBar style="dark" translucent />
-        <RootLayoutNav />
-      </SafeAreaView>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }}>
+          <StatusBar style="dark" translucent />
+          <RootLayoutNav />
+        </SafeAreaView>
+      </GestureHandlerRootView>
     </KeyboardProvider>
 
   )
@@ -63,9 +66,9 @@ function RootLayoutNav() {
 
   useEffect(libNotification.effect, [])
 
-  useEffect(()=>{
+  useEffect(() => {
     userClass.pushToken()
-  },[])
+  }, [])
 
   return (
     <ClerkProvider tokenCache={tokenCache} publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}>

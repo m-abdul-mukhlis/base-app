@@ -19,29 +19,26 @@ const userClass = {
     useStorage.removeItem("user-class")
     this.pushToken()
   },
-  sendToken(token: string) {
+  async sendToken(token: string) {
+    const installationId = await getInstallationID()
     if (userClass.get?.()?.email) {
-      UseFirestore().getCollectionWhere(["genealogy", "genealogy", "token"], [["username", "==", userClass?.get?.()?.email]], (data) => {
-        if (data.length > 0) {
-          const item = data?.[0]
-          const id = item.id
-
-          if (item?.device == Constants?.deviceName) {
-            UseFirestore().updateDocument(["genealogy", "genealogy", "token", String(id)], [
-              { key: "token", value: String(token) },
-              { key: "updated", value: serverTimestamp() }
-            ], () => {
-              useStorage.setItem("token", token)
-            })
-          } else {
-            addNewRecords()
-          }
-        } else
+      UseFirestore().getDocument(["genealogy", "genealogy", "token", String(installationId)], ({ data }) => {
+        if (data) {
+          UseFirestore().updateDocument(["genealogy", "genealogy", "token", String(installationId)], [
+            { key: "token", value: String(token) },
+            // @ts-ignore
+            { key: "updated", value: serverTimestamp() }
+          ], () => {
+            useStorage.setItem("token", token)
+          })
+        } else {
           addNewRecords()
+        }
       })
     }
 
     async function addNewRecords() {
+      const installationId = await getInstallationID()
       const post = {
         username: userClass?.get?.()?.email || null,
         device: Constants.deviceName,
@@ -49,18 +46,18 @@ const userClass = {
         created: serverTimestamp(),
         updated: serverTimestamp(),
         token: String(token),
-        installationId: await getInstallationID()
+        installationId
       }
 
-      UseFirestore().addCollection(["genealogy", "genealogy", "token"], post, () => {
+      UseFirestore().addDocument(["genealogy", "genealogy", "token", String(installationId)], post, () => {
         useStorage.setItem("token", token)
       })
     }
   },
   pushToken(): Promise<any> {
     return new Promise((resolve, reject) => {
-      libNotification?.requestPermission?.((token) => {
-        resolve(this.sendToken(token))
+      libNotification?.requestPermission?.(async (token) => {
+        resolve(await this.sendToken(token))
       })
     })
   }
@@ -71,6 +68,7 @@ function getInstallationID(): Promise<string> {
     let out = useStorage.getItemSync("installationId")
     if (!out) {
       if (Platform.OS == "android")
+        // @ts-ignore
         resolve(String(Application.androidId || Application.getAndroidId()))
       if (Platform.OS == "ios") {
         let code = await SecureStore.getItemAsync('installationId');

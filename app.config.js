@@ -3,7 +3,7 @@ module.exports = ({ config }) => {
     ...config,
     extra: {
       ...config.extra,
-      publish_id: 37
+      publish_id: 41
     }
   }
 }

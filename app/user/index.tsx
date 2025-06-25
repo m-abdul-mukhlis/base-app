@@ -18,7 +18,7 @@ export default function UserIndex() {
   const Items = (x: string, i: number) => {
     return (
       <TouchableOpacity onPress={() => {
-
+        router.navigate("user/test")
       }} key={i} style={{ width: menuWidth, height: menuWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
         {/* @ts-ignore */}
         <Ionicons name={x} size={40} color={"#909090"} />

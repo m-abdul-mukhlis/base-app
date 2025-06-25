@@ -11,7 +11,7 @@ import { useRef, useState } from "react";
 import { Alert, Pressable, ScrollView } from "react-native";
 
 export default function GenealogyAdd() {
-  const { par_rel } = useLocalSearchParams()
+  const { par_rel, id } = useLocalSearchParams()
   const [gender, setGender] = useState("m")
   const [name, setName] = useState("")
   const [loading, setLoading] = useState(false)
@@ -27,19 +27,29 @@ export default function GenealogyAdd() {
 
     setLoading(true)
 
-    const id = UseFirestore().generateId
-    UseFirestore().addDocument(["genealogy", "genealogy", "member", id], {
+    const key = UseFirestore().generateId
+    const data: any = {
       id,
       name: name,
       gender: gender,
       created: serverTimestamp(),
-      par_rel: par_rel.split(",")
-    }, () => {
+      par_rel: String(par_rel).split(","),
+    }
+    if (id) {
+      data.rel_id = [key, id]
+    }
+
+    UseFirestore().addDocument(["genealogy", "genealogy", "member", key], data, () => {
+      if (!!id) {
+        UseFirestore().updateDocument(["genealogy", "genealogy", "member", key], [{ key: "rel_id", value: data?.rel_id }], () => { })
+      }
       setName("")
       inputRef.current?.setText("")
       setLoading(false)
       router.back()
     }, () => setLoading(false))
+
+
   }
 
   return (
