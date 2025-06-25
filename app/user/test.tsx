@@ -1,6 +1,7 @@
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
-import { Button, Image, View } from 'react-native';
+import { Button, ScrollView, View } from 'react-native';
 import Crop from '../crop';
 
 export default function UserTest() {
@@ -18,11 +19,13 @@ export default function UserTest() {
   return (
     <View style={{ flex: 1 }}>
       {image && !cropped ? (
-        <Crop imageUri={image} onCrop={(uri) => setCropped(uri)} />
+        <ScrollView>
+          <Crop imageUri={image} onCrop={(uri) => setCropped(uri)} />
+        </ScrollView>
       ) : (
         <>
           <Button title="Pick Image" onPress={pick} />
-          {cropped && <Image source={{ uri: cropped }} style={{ width: 200, height: 200 }} />}
+          {cropped && <Image source={{ uri: cropped }} style={{ width: 500, height: 500 }} contentFit='contain' />}
         </>
       )}
     </View>
