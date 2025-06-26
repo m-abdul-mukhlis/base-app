@@ -18,7 +18,7 @@ export default function UserIndex() {
   const Items = (x: string, i: number) => {
     return (
       <TouchableOpacity onPress={() => {
-        router.navigate("user/test")
+        router.navigate("/user/test")
       }} key={i} style={{ width: menuWidth, height: menuWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
         {/* @ts-ignore */}
         <Ionicons name={x} size={40} color={"#909090"} />
@@ -29,11 +29,13 @@ export default function UserIndex() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flexDirection: "row", alignItems: "center", margin: 15 }}>
-        <Image source={{ uri: userData?.photoURL }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
-        <View style={{ marginLeft: 10, flex: 1 }}>
-          <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 12 }}>Hello {userData?.name}</Text>
-          <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Light", fontSize: 10 }}>{userData?.email}</Text>
-        </View>
+        <Pressable onPress={() => router.navigate('/user/edit')} style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 15 }}>
+          <Image source={{ uri: userData?.image }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
+          <View style={{ marginLeft: 10 }}>
+            <Text allowFontScaling={false} numberOfLines={1} ellipsizeMode="tail" style={{ fontFamily: "Roboto-Medium", fontSize: 12 }}>Hello {userData?.name}</Text>
+            <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Light", fontSize: 10 }}>{userData?.email}</Text>
+          </View>
+        </Pressable>
         <Pressable onPress={() => {
           router.push("/modal")
         }}>

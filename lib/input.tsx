@@ -12,11 +12,13 @@ import {
   Text,
   TextInput,
   TextInputProps,
+  TextStyle,
   View,
   ViewStyle
 } from 'react-native';
 
 export interface LibInputProps extends TextInputProps {
+  textStyle?: TextStyle
   icon?: string,
   label?: string,
   mask?: string,
@@ -176,15 +178,15 @@ const LibInput = forwardRef<LibInputRef, LibInputProps>((props, ref) => {
         }
         <TextInput
           ref={inputRef}
-          style={{
+          style={[{
             flex: 1,
             fontFamily: "Roboto-Medium",
             fontSize: 16,
             color: "#000",
-            marginRight: 30,
+            marginRight: 10,
             marginLeft: 10,
             textAlign: props.inputAlign || "left"
-          }}
+          }, props.textStyle]}
           placeholder={props.placeholder}
           maxLength={props.mask ? props.mask.length : undefined}
           placeholderTextColor="#e5e5e5"
@@ -193,7 +195,7 @@ const LibInput = forwardRef<LibInputRef, LibInputProps>((props, ref) => {
           onChangeText={handleChangeText}
           {...props}
         />
-        {props?.rightView?.()}
+        {props?.rightView && props?.rightView?.()}
       </View>
       {(error || helper) && (
         <Text

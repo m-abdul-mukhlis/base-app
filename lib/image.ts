@@ -68,6 +68,7 @@ const libImage = {
   },
 
   async processImage(result: any, maxDimension?: number): Promise<string> {
+    const URL = "https://base-app-backend-production.up.railway.app/upload"
     try {
       const formData = new FormData();
       formData.append('image', {
@@ -76,7 +77,7 @@ const libImage = {
         type: 'image/jpeg',
       } as any);
 
-      const response = await fetch(process.env.UPLOAD_IMAGE_URL, {
+      const response = await fetch(URL, {
         method: 'POST',
         body: formData,
         headers: {

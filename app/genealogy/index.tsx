@@ -5,11 +5,13 @@ import UseFirestore from "@/components/useFirestore";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, TextInput } from "react-native";
 
 export default function GenealogyIndex() {
   const [data, setData] = useState<any>()
+  const [query, setQuery] = useState<any>("")
+  const inputRef = useRef<TextInput>(null)
 
   let res: any = []
 
@@ -23,8 +25,12 @@ export default function GenealogyIndex() {
         res.push({ ...v.data })
       })
       setData(res)
-    })
+    }, console.warn)
   }
+
+  let filtered = query == "" ? data : data?.filter?.((item: any) =>
+    item.name.toLowerCase().includes(query.toLowerCase())
+  );
 
   return (
     <View style={{ flex: 1 }}>
@@ -35,7 +41,30 @@ export default function GenealogyIndex() {
           <ActivityIndicator color={"#ec4e1e"} />
         }
         {
-          data && data.length > 0 && data?.map?.((item: any, i: number) => {
+          data &&
+          <View style={{ marginTop: 15, marginBottom: 10, marginHorizontal: 15, borderColor: "#ec4e1e", borderWidth: 1, borderRadius: 10, height: 40, flexDirection: "row", alignItems: "center", paddingHorizontal: 15 }}>
+            <TextInput
+              ref={inputRef}
+              style={{ flex: 1, color: "#ec4e1e" }}
+              placeholder="Search name"
+              placeholderTextColor={"#e6e6e6"}
+              onChangeText={(t) => {
+                setQuery(t)
+              }}
+            />
+            {
+              query != "" &&
+              <Pressable onPress={() => {
+                setQuery("")
+                inputRef.current?.clear()
+              }}>
+                <Ionicons name="close-circle" size={24} color={"#989898"} />
+              </Pressable>
+            }
+          </View>
+        }
+        {
+          filtered && filtered?.length > 0 && filtered?.map?.((item: any, i: number) => {
             return (
               <Pressable key={i} onPress={() => {
                 router.push({

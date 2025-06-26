@@ -13,6 +13,7 @@ export default function ComponentScroll(props: ComponentScrollProps) {
       showsHorizontalScrollIndicator={false}
       nestedScrollEnabled
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
       refreshControl={props?.onRefresh && <RefreshControl refreshing={false} onRefresh={props?.onRefresh} />}>
       {props?.children}
     </ScrollView>

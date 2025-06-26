@@ -1,4 +1,6 @@
+import libImage from '@/lib/image';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Button, Image, View } from 'react-native';
 import Crop from '../crop';
@@ -37,6 +39,14 @@ export default function UserTest() {
       {croppedImage && (
         <View style={{ flex: 1 }}>
           <Image source={{ uri: croppedImage }} style={{ flex: 1, resizeMode: 'contain' }} />
+          <Button title='SAVE' onPress={() => {
+            libImage.processImage({ uri: croppedImage }).then((uri) => {
+              router.replace({
+                pathname: '/user/edit',
+                params: { imageUri: uri },
+              })
+            })
+          }} />
         </View>
       )}
     </View>

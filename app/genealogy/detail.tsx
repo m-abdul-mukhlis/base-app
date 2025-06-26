@@ -3,9 +3,10 @@ import ComponentScroll from "@/components/Scroll";
 import { Text, View } from "@/components/Themed";
 import UseFirestore from "@/components/useFirestore";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from '@react-navigation/native';
 import { Image } from "expo-image";
-import { router, useLocalSearchParams, useNavigation } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useCallback, useState } from "react";
 import { Pressable } from "react-native";
 
 export default function GenealogyDetail() {
@@ -13,16 +14,12 @@ export default function GenealogyDetail() {
   const [relation, setRelation] = useState<any>()
   const [child, setChild] = useState<any>()
   const [parents, setParents] = useState<any>()
-  const navigation = useNavigation()
-  const focus = navigation.isFocused()
 
-  console.log(id, id, name, gender, par_rel, rel_id)
+  console.log({ id, name, gender, par_rel, rel_id })
 
-  useEffect(() => {
-    if (focus) {
-      getData()
-    }
-  }, [navigation])
+  useFocusEffect(
+    useCallback(getData, [])
+  );
 
   function getData() {
     if (rel_id && rel_id != "0") {

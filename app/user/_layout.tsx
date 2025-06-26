@@ -55,6 +55,7 @@ export default function UserLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name='test' options={{ headerShown: false }} />
+      <Stack.Screen name='edit' options={{ headerShown: false }} />
     </Stack>
   );
 }

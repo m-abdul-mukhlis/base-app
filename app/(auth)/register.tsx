@@ -87,7 +87,7 @@ export default function AuthRegisterScreen() {
         if (code == "auth/email-already-in-use") {
           Alert.alert("Oops!", "The email address is already in use by another account")
         }
-        console.warn(message)
+        console.warn("error",message)
       })
     } catch (err: any) {
       setLoading(false)

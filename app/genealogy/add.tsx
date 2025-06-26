@@ -29,7 +29,7 @@ export default function GenealogyAdd() {
 
     const key = UseFirestore().generateId
     const data: any = {
-      id,
+      id: key,
       name: name,
       gender: gender,
       created: serverTimestamp(),
@@ -41,7 +41,7 @@ export default function GenealogyAdd() {
 
     UseFirestore().addDocument(["genealogy", "genealogy", "member", key], data, () => {
       if (!!id) {
-        UseFirestore().updateDocument(["genealogy", "genealogy", "member", key], [{ key: "rel_id", value: data?.rel_id }], () => { })
+        UseFirestore().updateDocument(["genealogy", "genealogy", "member", String(id)], [{ key: "rel_id", value: data?.rel_id }], () => { })
       }
       setName("")
       inputRef.current?.setText("")
