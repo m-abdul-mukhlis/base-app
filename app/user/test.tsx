@@ -13,9 +13,9 @@ import { runOnJS } from "react-native-reanimated";
 // ─────────────────────────────────────────
 // 🔠 Types
 // ─────────────────────────────────────────
-
 type TreeNode = {
   label: string;
+  spouse?: string;
   children?: TreeNode[];
 };
 
@@ -43,12 +43,13 @@ type LineSegment = {
 // ─────────────────────────────────────────
 // 📦 Data
 // ─────────────────────────────────────────
-
 const tree: TreeNode = {
   label: "Root",
+  spouse: "Root Spouse",
   children: [
     {
       label: "Person 1",
+      spouse: "Spouse 1",
       children: [
         { label: "Child 1-1" },
         { label: "Child 1-2" },
@@ -58,21 +59,15 @@ const tree: TreeNode = {
     },
     {
       label: "Person 2",
-      children: [
-        { label: "Child 2-1" },
-        { label: "Child 2-2" },
-      ],
+      spouse: "Spouse 2",
+      children: [{ label: "Child 2-1" }],
     },
-    { label: "Person 3" },
-    { label: "Person 4" },
-    { label: "Person 5" },
   ],
 };
 
 // ─────────────────────────────────────────
 // ⚙️ Constants
 // ─────────────────────────────────────────
-
 const nodeWidth = 80;
 const nodeHeight = 40;
 const fontSize = 14;
@@ -82,7 +77,6 @@ const horizontalSpacing = 120;
 // ─────────────────────────────────────────
 // 📐 Tree Layout
 // ─────────────────────────────────────────
-
 const layoutTree = (
   node: TreeNode,
   expandedMap: Record<string, boolean>,
@@ -90,22 +84,24 @@ const layoutTree = (
   xOffset = 0
 ): LayoutNode => {
   const isExpanded = expandedMap[node.label] ?? true;
+  const hasSpouse = !!node.spouse;
   const children = isExpanded ? node.children || [] : [];
 
   let width = 0;
   const positionedChildren: LayoutNode[] = [];
 
-  for (let child of children) {
+  for (const child of children) {
     const childLayout = layoutTree(child, expandedMap, depth + 1, xOffset + width);
     width += childLayout.totalWidth;
     positionedChildren.push(childLayout);
   }
 
-  if (children.length === 0 || !isExpanded) {
-    width = nodeWidth + horizontalSpacing;
+  if (children.length === 0) {
+    width = hasSpouse ? nodeWidth * 2 + 20 + horizontalSpacing : nodeWidth + horizontalSpacing;
   }
 
-  const x = xOffset + width / 2 - nodeWidth / 2;
+  const centerOffset = hasSpouse ? (nodeWidth * 2 + 20) : nodeWidth;
+  const x = xOffset + width / 2 - centerOffset / 2;
   const y = depth * verticalSpacing;
 
   return {
@@ -124,11 +120,29 @@ const flattenTree = (
   expandedMap: Record<string, boolean> = {}
 ) => {
   const isExpanded = expandedMap[treeNode.node.label] ?? true;
+  const hasSpouse = !!treeNode.node.spouse;
 
-  const parentCenterX = treeNode.x + nodeWidth / 2;
-  const parentBottomY = treeNode.y + nodeHeight;
+  const personX = treeNode.x;
+  const spouseX = treeNode.x + nodeWidth + 20;
+  const y = treeNode.y;
 
-  nodes.push({ x: treeNode.x, y: treeNode.y, label: treeNode.node.label });
+  nodes.push({ x: personX, y, label: treeNode.node.label });
+
+  if (hasSpouse) {
+    nodes.push({ x: spouseX, y, label: treeNode.node.spouse! });
+
+    lines.push({
+      x1: personX + nodeWidth,
+      y1: y + nodeHeight / 2,
+      x2: spouseX,
+      y2: y + nodeHeight / 2,
+    });
+  }
+
+  const coupleCenterX = hasSpouse
+    ? personX + (nodeWidth + 20) / 2 + nodeWidth / 2
+    : personX + nodeWidth / 2;
+  const parentBottomY = y + nodeHeight;
 
   if (!isExpanded) return { nodes, lines };
 
@@ -137,8 +151,8 @@ const flattenTree = (
     const childTopY = child.y;
     const midY = parentBottomY + (childTopY - parentBottomY) / 2;
 
-    lines.push({ x1: parentCenterX, y1: parentBottomY, x2: parentCenterX, y2: midY });
-    lines.push({ x1: parentCenterX, y1: midY, x2: childCenterX, y2: midY });
+    lines.push({ x1: coupleCenterX, y1: parentBottomY, x2: coupleCenterX, y2: midY });
+    lines.push({ x1: coupleCenterX, y1: midY, x2: childCenterX, y2: midY });
     lines.push({ x1: childCenterX, y1: midY, x2: childCenterX, y2: childTopY });
 
     flattenTree(child, lines, nodes, expandedMap);
@@ -156,17 +170,13 @@ const flattenAllNodes = (treeNode: LayoutNode, list: FlattenedNode[] = []): Flat
 };
 
 const findNodeByLabel = (node: TreeNode, label: string): TreeNode | null => {
-  if (node.label === label) return node;
+  if (node.label === label || node.spouse === label) return node;
   for (const child of node.children || []) {
     const result = findNodeByLabel(child, label);
     if (result) return result;
   }
   return null;
 };
-
-// ─────────────────────────────────────────
-// 🧩 Main Component
-// ─────────────────────────────────────────
 
 export default function UserTest() {
   const font = useFont(require("../../assets/fonts/Roboto-Regular.ttf"), fontSize);
@@ -178,7 +188,7 @@ export default function UserTest() {
   const allNodes = flattenAllNodes(layout);
 
   const canvasWidth = Math.max(screenWidth, layout.totalWidth);
-  const canvasHeight = Math.max(400, nodes[nodes.length - 1]?.y + nodeHeight + 50);
+  const canvasHeight = Math.max(400, layout.y + 3 * verticalSpacing);
   const xShift = Math.max((screenWidth - layout.totalWidth) / 2, 0);
 
   const handleTap = (x: number, y: number) => {
@@ -190,10 +200,10 @@ export default function UserTest() {
 
       if (x >= left && x <= right && y >= top && y <= bottom) {
         const target = findNodeByLabel(tree, node.label);
-        if (target?.children && target.children.length > 0) {
+        if (target?.children?.length) {
           setExpandedMap((prev) => ({
             ...prev,
-            [node.label]: !(prev[node.label] ?? true),
+            [target.label]: !(prev[target.label] ?? true),
           }));
         }
         break;
@@ -205,7 +215,7 @@ export default function UserTest() {
     runOnJS(handleTap)(e.x, e.y);
   });
 
-  const canvasKey = JSON.stringify(expandedMap); // Re-render on toggle
+  const canvasKey = JSON.stringify(expandedMap);
 
   return font ? (
     <GestureDetector gesture={gesture}>
