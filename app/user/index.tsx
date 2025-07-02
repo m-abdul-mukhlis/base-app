@@ -1,4 +1,5 @@
 import { Text, View } from "@/components/Themed";
+import UseFirestore from "@/components/useFirestore";
 import libImage from "@/lib/image";
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -18,7 +19,7 @@ export default function UserIndex() {
   const Items = (x: string, i: number) => {
     return (
       <TouchableOpacity onPress={() => {
-        router.navigate("/user/test")
+        // router.navigate("/user/test")
       }} key={i} style={{ width: menuWidth, height: menuWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
         {/* @ts-ignore */}
         <Ionicons name={x} size={40} color={"#909090"} />
@@ -49,6 +50,16 @@ export default function UserIndex() {
             router.navigate("/genealogy")
           }} style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
             <FontAwesome5 name="tree" size={60} color={"#909090"} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => {
+            UseFirestore().getCollectionOrderBy(["genealogy", "genealogy", "member"], [["created", "desc"]], (data) => {
+              router.push({
+                pathname: '/user/test',
+                params: { data: JSON.stringify(data) }
+              })
+            }, console.warn)
+          }} style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="trending-up" size={60} color={"#909090"} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => {
             libImage.fromCamera().then((res) => {

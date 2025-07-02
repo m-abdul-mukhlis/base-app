@@ -1,18 +1,10 @@
-import {
-  Canvas,
-  Line,
-  Rect,
-  Text,
-  useFont,
-} from "@shopify/react-native-skia";
+import { Canvas, Circle, Group, Image, Line, Mask, RoundedRect, Text, useFont, useImage } from "@shopify/react-native-skia";
+import { useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
-import { Dimensions, ScrollView } from "react-native";
+import { ScrollView, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 
-// ─────────────────────────────────────────
-// 🔠 Types
-// ─────────────────────────────────────────
 type TreeNode = {
   label: string;
   spouse?: string;
@@ -40,43 +32,36 @@ type LineSegment = {
   y2: number;
 };
 
-// ─────────────────────────────────────────
-// 📦 Data
-// ─────────────────────────────────────────
-const tree: TreeNode = {
-  label: "Root",
-  spouse: "Root Spouse",
-  children: [
-    {
-      label: "Person 1",
-      spouse: "Spouse 1",
-      children: [
-        { label: "Child 1-1" },
-        { label: "Child 1-2" },
-        { label: "Child 1-3" },
-        { label: "Child 1-4" },
-      ],
-    },
-    {
-      label: "Person 2",
-      spouse: "Spouse 2",
-      children: [{ label: "Child 2-1" }],
-    },
-  ],
-};
+// const tree: TreeNode = {
+//   label: "Root",
+//   spouse: "Root Spouse",
+//   children: [
+//     {
+//       label: "Person 1",
+//       spouse: "Spouse 1",
+//       children: [
+//         { label: "Child 1-1" },
+//         { label: "Child 1-2" },
+//       ],
+//     },
+//     {
+//       label: "Person 2",
+//       spouse: "Spouse 2",
+//       children: [
+//         { label: "Child 2-1" },
+//         { label: "Child 2-2" },
+//         { label: "Child 2-3" },
+//       ],
+//     },
+//   ],
+// };
 
-// ─────────────────────────────────────────
-// ⚙️ Constants
-// ─────────────────────────────────────────
 const nodeWidth = 80;
-const nodeHeight = 40;
-const fontSize = 14;
-const verticalSpacing = 100;
+const nodeHeight = 90;
+const fontSize = 12;
+const verticalSpacing = 120;
 const horizontalSpacing = 120;
 
-// ─────────────────────────────────────────
-// 📐 Tree Layout
-// ─────────────────────────────────────────
 const layoutTree = (
   node: TreeNode,
   expandedMap: Record<string, boolean>,
@@ -178,18 +163,102 @@ const findNodeByLabel = (node: TreeNode, label: string): TreeNode | null => {
   return null;
 };
 
+type RawPerson = {
+  data: {
+    id: string;
+    name: string;
+    gender: string;
+    par_rel: string[];
+    rel_id?: string[];
+    created: any
+  };
+  id: string;
+};
+
+function parseFamilyData(data: RawPerson[]): TreeNode | null {
+  const peopleMap = new Map<string, RawPerson>();
+  const spouseMap = new Map<string, string>();
+  const childrenMap = new Map<string, string[]>();
+
+  data.forEach((item) => peopleMap.set(item.id, item));
+
+  for (const item of data) {
+    const rel_id = item.data.rel_id;
+    if (rel_id && rel_id.length === 2) {
+      spouseMap.set(rel_id[0], rel_id[1]);
+      spouseMap.set(rel_id[1], rel_id[0]);
+    }
+  }
+
+  for (const item of data) {
+    const par = item.data.par_rel;
+    if (par && par.length === 2 && par[0] !== "undefined" && par[1] !== "undefined") {
+      const key = [par[0], par[1]].sort().join("-");
+      if (!childrenMap.has(key)) childrenMap.set(key, []);
+      childrenMap.get(key)!.push(item.id);
+    }
+  }
+
+  const root = data.find((item) => item.data.par_rel.includes("0"));
+  if (!root) return null;
+
+  function buildTree(personId: string, visited = new Set<string>()): TreeNode | null {
+    if (visited.has(personId)) return null;
+    visited.add(personId);
+
+    const person = peopleMap.get(personId);
+    if (!person) return null;
+
+    const node: TreeNode = { label: person.data.name };
+
+    const spouseId = spouseMap.get(personId);
+    if (spouseId) {
+      const spouse = peopleMap.get(spouseId);
+      if (spouse) node.spouse = spouse.data.name;
+    }
+
+    const key = spouseId
+      ? [personId, spouseId].sort().join("-")
+      : undefined;
+
+    let children = key ? childrenMap.get(key) || [] : [];
+
+    children.sort((a, b) => {
+      const aCreated = peopleMap.get(a)?.data.created;
+      const bCreated = peopleMap.get(b)?.data.created;
+      if (!aCreated || !bCreated) return 0;
+      if (aCreated.seconds !== bCreated.seconds) {
+        return aCreated.seconds - bCreated.seconds;
+      }
+      return aCreated.nanoseconds - bCreated.nanoseconds;
+    });
+
+    node.children = children
+      .map((childId) => buildTree(childId, visited))
+      .filter((n): n is TreeNode => !!n);
+
+    return node;
+  }
+
+  return buildTree(root.id);
+}
+
 export default function UserTest() {
+  const { data } = useLocalSearchParams()
   const font = useFont(require("../../assets/fonts/Roboto-Regular.ttf"), fontSize);
-  const screenWidth = Dimensions.get("window").width;
+  const image = useImage(require("../../assets/images/icon.png"));
+  const { width, height } = useWindowDimensions()
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
+
+  const tree: TreeNode = parseFamilyData(JSON.parse(data))
 
   const layout = layoutTree(tree, expandedMap);
   const { nodes, lines } = flattenTree(layout, [], [], expandedMap);
   const allNodes = flattenAllNodes(layout);
 
-  const canvasWidth = Math.max(screenWidth, layout.totalWidth);
-  const canvasHeight = Math.max(400, layout.y + 3 * verticalSpacing);
-  const xShift = Math.max((screenWidth - layout.totalWidth) / 2, 0);
+  const canvasWidth = Math.max(width, layout.totalWidth);
+  const canvasHeight = Math.max(height, layout.y + 3 * verticalSpacing);
+  const xShift = Math.max((width - layout.totalWidth) / 2, 0);
 
   const handleTap = (x: number, y: number) => {
     for (const node of allNodes) {
@@ -217,11 +286,11 @@ export default function UserTest() {
 
   const canvasKey = JSON.stringify(expandedMap);
 
-  return font ? (
+  return font && image ? (
     <GestureDetector gesture={gesture}>
       <ScrollView horizontal>
         <ScrollView>
-          <Canvas key={canvasKey} style={{ width: canvasWidth, height: canvasHeight }}>
+          <Canvas key={canvasKey} style={{ width: canvasWidth, height: canvasHeight, marginTop: 30 }}>
             {lines.map((line, idx) => (
               <Line
                 key={`line-${idx}`}
@@ -233,17 +302,41 @@ export default function UserTest() {
             ))}
             {nodes.map((node, idx) => (
               <React.Fragment key={`node-${idx}`}>
-                <Rect
+                <RoundedRect
+                  r={nodeWidth * 0.1}
                   x={node.x + xShift}
                   y={node.y}
                   width={nodeWidth}
                   height={nodeHeight}
                   color="#222"
                 />
+                <Mask
+                  mode="luminance"
+                  mask={
+                    <Group>
+                      <Circle
+                        cx={node.x + xShift + nodeWidth / 2}
+                        cy={node.y + 35}
+                        r={25}
+                        color="white"
+                      />
+                    </Group>
+                  }
+                >
+                  <Image
+                    image={image}
+                    x={node.x + xShift + nodeWidth / 2 - 25}
+                    y={node.y + 10}
+                    width={50}
+                    height={50}
+                    fit="cover"
+                  />
+                </Mask>
+
                 <Text
-                  x={node.x + xShift + 10}
-                  y={node.y + 25}
-                  text={node.label}
+                  x={node.x + xShift + 5}
+                  y={node.y + 70 + 4}
+                  text={node.label.length > 10 ? node.label.slice(0, 10) + "…" : node.label}
                   font={font}
                   color="white"
                 />
