@@ -1,13 +1,16 @@
-import { Canvas, ImageSVG, Line, RoundedRect, Skia, Text, useFont, useImage } from "@shopify/react-native-skia";
+import { Canvas, ImageSVG, Line, RoundedRect, Skia, Text, useFont } from "@shopify/react-native-skia";
 import { useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 
+// Updated TreeNode type
 type TreeNode = {
   label: string;
+  gender: string;
   spouse?: string;
+  spouseGender?: string;
   children?: TreeNode[];
 };
 
@@ -23,6 +26,7 @@ type FlattenedNode = {
   x: number;
   y: number;
   label: string;
+  gender: string;
 };
 
 type LineSegment = {
@@ -87,10 +91,10 @@ const flattenTree = (
   const spouseX = treeNode.x + nodeWidth + 20;
   const y = treeNode.y;
 
-  nodes.push({ x: personX, y, label: treeNode.node.label });
+  nodes.push({ x: personX, y, label: treeNode.node.label, gender: treeNode.node.gender });
 
   if (hasSpouse) {
-    nodes.push({ x: spouseX, y, label: treeNode.node.spouse! });
+    nodes.push({ x: spouseX, y, label: treeNode.node.spouse!, gender: treeNode.node.spouseGender ?? "u" });
 
     lines.push({
       x1: personX + nodeWidth,
@@ -136,7 +140,7 @@ type RawPerson = {
   gender: string;
   par_rel: string[];
   rel_id?: string[];
-  created: any
+  created: any;
 };
 
 function parseFamilyData(data: RawPerson[]): TreeNode | null {
@@ -173,21 +177,23 @@ function parseFamilyData(data: RawPerson[]): TreeNode | null {
     const person = peopleMap.get(personId);
     if (!person) return null;
 
-    const node: TreeNode = { label: person.name };
+    const node: TreeNode = {
+      label: person.name,
+      gender: person.gender,
+    };
 
     const spouseId = spouseMap.get(personId);
     if (spouseId) {
       const spouse = peopleMap.get(spouseId);
-      if (spouse) node.spouse = spouse.name;
+      if (spouse) {
+        node.spouse = spouse.name;
+        node.spouseGender = spouse.gender;
+      }
     }
 
-    const key = spouseId
-      ? [personId, spouseId].sort().join("-")
-      : undefined;
-
+    const key = spouseId ? [personId, spouseId].sort().join("-") : undefined;
     let children = key ? childrenMap.get(key) || [] : [];
 
-    // Sort children by creation time ascending
     children.sort((a, b) => {
       const aCreated = peopleMap.get(a)?.created;
       const bCreated = peopleMap.get(b)?.created;
@@ -215,15 +221,13 @@ const genderSVG = {
 }
 
 export default function UserTest() {
-  const { data }: any = useLocalSearchParams()
+  const { data }: any = useLocalSearchParams();
   const font = useFont(require("../../assets/fonts/Roboto-Regular.ttf"), fontSize);
-  const image = useImage(require("../../assets/images/icon.png"));
   const { width, height } = useWindowDimensions();
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
   const [scrollPos, setScrollPos] = useState({ x: 0, y: 0 });
 
-  const tree: any = parseFamilyData(JSON.parse(data))
-
+  const tree: any = parseFamilyData(JSON.parse(data));
   const layout = useMemo(() => layoutTree(tree, expandedMap), [expandedMap]);
   const { nodes, lines } = useMemo(() => flattenTree(layout, [], [], expandedMap), [layout, expandedMap]);
 
@@ -268,7 +272,7 @@ export default function UserTest() {
     });
   };
 
-  return font && image ? (
+  return font ? (
     <GestureDetector gesture={gesture}>
       <ScrollView horizontal onScroll={onScroll} scrollEventThrottle={16}>
         <ScrollView onScroll={onScroll} scrollEventThrottle={16}>
@@ -293,7 +297,7 @@ export default function UserTest() {
                   color="#222"
                 />
                 <ImageSVG
-                  svg={genderSVG.m}
+                  svg={genderSVG[node.gender as "m" | "f" | "u"]}
                   x={node.x + xShift + nodeWidth / 2 - 25}
                   y={node.y + 10}
                   width={50}
