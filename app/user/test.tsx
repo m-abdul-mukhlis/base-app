@@ -5,7 +5,12 @@ import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, useWindowDimension
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 
-// Updated TreeNode type
+const nodeWidth = 80;
+const nodeHeight = 90;
+const fontSize = 12;
+const verticalSpacing = 120;
+const horizontalSpacing = 120;
+
 type TreeNode = {
   label: string;
   gender: string;
@@ -36,19 +41,13 @@ type LineSegment = {
   y2: number;
 };
 
-const nodeWidth = 80;
-const nodeHeight = 90;
-const fontSize = 12;
-const verticalSpacing = 120;
-const horizontalSpacing = 120;
-
 const layoutTree = (
   node: TreeNode,
   expandedMap: Record<string, boolean>,
   depth = 0,
   xOffset = 0
 ): LayoutNode => {
-  const isExpanded = expandedMap[node.label] ?? true;
+  const isExpanded = expandedMap[node.label] ?? false;
   const hasSpouse = !!node.spouse;
   const children = isExpanded ? node.children || [] : [];
 
@@ -84,7 +83,7 @@ const flattenTree = (
   nodes: FlattenedNode[] = [],
   expandedMap: Record<string, boolean> = {}
 ) => {
-  const isExpanded = expandedMap[treeNode.node.label] ?? true;
+  const isExpanded = expandedMap[treeNode.node.label] ?? false;
   const hasSpouse = !!treeNode.node.spouse;
 
   const personX = treeNode.x;
@@ -94,7 +93,7 @@ const flattenTree = (
   nodes.push({ x: personX, y, label: treeNode.node.label, gender: treeNode.node.gender });
 
   if (hasSpouse) {
-    nodes.push({ x: spouseX, y, label: treeNode.node.spouse!, gender: treeNode.node.spouseGender ?? "u" });
+    nodes.push({ x: spouseX, y, label: treeNode.node.spouse!, gender: treeNode.node.spouseGender || 'u' });
 
     lines.push({
       x1: personX + nodeWidth,
@@ -126,11 +125,17 @@ const flattenTree = (
   return { nodes, lines };
 };
 
+const collectLabels = (node: TreeNode, map: Record<string, boolean>) => {
+  map[node.label] = false;
+  for (const child of node.children || []) {
+    collectLabels(child, map);
+  }
+};
+
 const collectNodeMap = (node: TreeNode, map: Record<string, TreeNode>) => {
   map[node.label] = node;
-  if (node.spouse) map[node.spouse] = node;
-  for (const child of node.children || []) {
-    collectNodeMap(child, map);
+  if (node.children) {
+    for (const child of node.children) collectNodeMap(child, map);
   }
 };
 
@@ -224,22 +229,27 @@ export default function UserTest() {
   const { data }: any = useLocalSearchParams();
   const font = useFont(require("../../assets/fonts/Roboto-Regular.ttf"), fontSize);
   const { width, height } = useWindowDimensions();
-  const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
+  const tree = parseFamilyData(JSON.parse(data));
   const [scrollPos, setScrollPos] = useState({ x: 0, y: 0 });
 
-  const tree: any = parseFamilyData(JSON.parse(data));
-  const layout = useMemo(() => layoutTree(tree, expandedMap), [expandedMap]);
-  const { nodes, lines } = useMemo(() => flattenTree(layout, [], [], expandedMap), [layout, expandedMap]);
+  const [expandedMap, setExpandedMap] = useState(() => {
+    const map: Record<string, boolean> = {};
+    if (tree) collectLabels(tree, map);
+    return map;
+  });
 
-  const canvasWidth = Math.max(width, layout.totalWidth);
-  const canvasHeight = Math.max(height, layout.y + 3 * verticalSpacing);
-  const xShift = Math.max((width - layout.totalWidth) / 2, 0);
+  const layout = useMemo(() => (tree ? layoutTree(tree, expandedMap) : null), [expandedMap]);
+  const { nodes, lines } = useMemo(() => layout ? flattenTree(layout, [], [], expandedMap) : { nodes: [], lines: [] }, [layout, expandedMap]);
+
+  const canvasWidth = layout ? Math.max(width, layout.totalWidth) : width;
+  const canvasHeight = layout ? Math.max(height, layout.y + 3 * verticalSpacing) : height;
+  const xShift = layout ? Math.max((width - layout.totalWidth) / 2, 0) : 0;
 
   const nodeMap = useMemo(() => {
     const map: Record<string, TreeNode> = {};
-    collectNodeMap(tree, map);
+    if (tree) collectNodeMap(tree, map);
     return map;
-  }, []);
+  }, [tree]);
 
   const handleTap = (x: number, y: number) => {
     for (const node of nodes) {
@@ -251,10 +261,13 @@ export default function UserTest() {
       if (x >= left && x <= right && y >= top && y <= bottom) {
         const target = nodeMap[node.label];
         if (target?.children?.length) {
-          setExpandedMap((prev) => ({
-            ...prev,
-            [target.label]: !(prev[target.label] ?? true),
-          }));
+          setExpandedMap((prev) => {
+            const next = { ...prev, [target.label]: true };
+            for (const child of target.children!) {
+              next[child.label] = false;
+            }
+            return next;
+          });
         }
         break;
       }
@@ -272,7 +285,7 @@ export default function UserTest() {
     });
   };
 
-  return font ? (
+  return font && layout ? (
     <GestureDetector gesture={gesture}>
       <ScrollView horizontal onScroll={onScroll} scrollEventThrottle={16}>
         <ScrollView onScroll={onScroll} scrollEventThrottle={16}>
@@ -297,7 +310,7 @@ export default function UserTest() {
                   color="#222"
                 />
                 <ImageSVG
-                  svg={genderSVG[node.gender as "m" | "f" | "u"]}
+                  svg={genderSVG[node.gender as keyof typeof genderSVG] || genderSVG.u}
                   x={node.x + xShift + nodeWidth / 2 - 25}
                   y={node.y + 10}
                   width={50}
