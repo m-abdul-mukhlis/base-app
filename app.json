@@ -8,12 +8,9 @@
     "scheme": "baseapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true,
-      "infoPlist": {
-        "NSCameraUsageDescription": "$(PRODUCT_NAME) needs access to your Camera."
-      }
-    },
+    "platforms": [
+      "android"
+    ],
     "android": {
       "package": "baseapp.bringthecode.id",
       "versionCode": 2,

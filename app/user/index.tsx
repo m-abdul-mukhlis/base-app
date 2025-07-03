@@ -1,9 +1,10 @@
+import ComponentModal, { ComponentModalRef } from "@/components/Modal";
 import { Text, View } from "@/components/Themed";
 import libImage from "@/lib/image";
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, ScrollView, TouchableOpacity, useWindowDimensions } from "react-native";
 import userClass from "./class";
 
@@ -13,12 +14,14 @@ export default function UserIndex() {
   const [image, setImage] = useState('')
   const itemWidth = (width - 50) * 0.333
   const menuWidth = (width - 80) * 0.206
+  const modalRef = useRef<ComponentModalRef>(null);
   const ic = ["american-football", "boat-outline", "calendar-number-outline", "chatbubbles-outline", "cube-outline"]
 
   const Items = (x: string, i: number) => {
     return (
       <TouchableOpacity onPress={() => {
         // router.navigate("/user/test")
+        modalRef.current?.open()
       }} key={i} style={{ width: menuWidth, height: menuWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
         {/* @ts-ignore */}
         <Ionicons name={x} size={40} color={"#909090"} />
@@ -88,6 +91,9 @@ export default function UserIndex() {
         </View>
 
       </ScrollView>
+      <ComponentModal ref={modalRef} onClose={() => { }}>
+        <Text style={{ fontSize: 18 }}>Drag down to dismiss</Text>
+      </ComponentModal>
     </View>
   )
 }
