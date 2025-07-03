@@ -1,7 +1,7 @@
-import { Canvas, Circle, Group, Image, Line, Mask, RoundedRect, Text, useFont, useImage } from "@shopify/react-native-skia";
+import { Canvas, ImageSVG, Line, RoundedRect, Skia, Text, useFont, useImage } from "@shopify/react-native-skia";
 import { useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
-import { ScrollView, useWindowDimensions } from "react-native";
+import React, { useMemo, useState } from "react";
+import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 
@@ -31,32 +31,6 @@ type LineSegment = {
   x2: number;
   y2: number;
 };
-
-const tree: TreeNode = { "label": "Mbah Suratmi", "spouse": "Mbah Masri", "children": [{ "label": "Arif", "spouse": "Siti", "children": [{ "label": "Muhammad Alfa Rizqi", "children": [] }] }, { "label": "Noor", "spouse": "Ghulam Mubarok", "children": [{ "label": "Daffa", "children": [] }] }, { "label": "Yanti", "spouse": "Sahuri", "children": [{ "label": "Ahmad Dilan Alfarisky", "children": [] }, { "label": "Adit", "children": [] }] }, { "label": "Khamdan Purwadi", "spouse": "Dwi", "children": [{ "label": "Askal", "children": [] }, { "label": "Heni", "children": [] }, { "label": "Dini", "children": [] }] }, { "label": "Sri", "spouse": "Masnan", "children": [{ "label": "Falah", "children": [] }, { "label": "Ulya", "children": [] }] }, { "label": "Eni", "spouse": "Mundakir", "children": [{ "label": "Muhammad Abdul Mukhlis", "spouse": "Noor Aidha Amilia", "children": [{ "label": "Muhammad Daffin Atharrazka", "children": [] }] }, { "label": "Ikha Sri Rahayu", "spouse": ". ", "children": [{ "label": "Habibah Qidzama Latifah", "children": [] }] }] }, { "label": "Noor Taufiq", "spouse": "Mul", "children": [{ "label": "Nanda", "children": [] }, { "label": "Nurul", "children": [] }] }, { "label": "Endang", "spouse": "Solikhul Hadi", "children": [{ "label": "Anang", "children": [] }, { "label": "Ana", "spouse": "Aris", "children": [{ "label": "Nabil Sakha Alfarizi", "children": [] }] }, { "label": "Dewi", "spouse": "Tain", "children": [{ "label": "Daffin", "children": [] }, { "label": "Faruq", "children": [] }] }, { "label": "Hanik", "spouse": "Arif", "children": [{ "label": "Hasna", "children": [] }, { "label": "Muham", "children": [] }] }] }] }
-
-// const tree: TreeNode = {
-//   label: "Root",
-//   spouse: "Root Spouse",
-//   children: [
-//     {
-//       label: "Person 1",
-//       spouse: "Spouse 1",
-//       children: [
-//         { label: "Child 1-1" },
-//         { label: "Child 1-2" },
-//       ],
-//     },
-//     {
-//       label: "Person 2",
-//       spouse: "Spouse 2",
-//       children: [
-//         { label: "Child 2-1" },
-//         { label: "Child 2-2" },
-//         { label: "Child 2-3" },
-//       ],
-//     },
-//   ],
-// };
 
 const nodeWidth = 80;
 const nodeHeight = 90;
@@ -148,21 +122,12 @@ const flattenTree = (
   return { nodes, lines };
 };
 
-const flattenAllNodes = (treeNode: LayoutNode, list: FlattenedNode[] = []): FlattenedNode[] => {
-  list.push({ x: treeNode.x, y: treeNode.y, label: treeNode.node.label });
-  for (const child of treeNode.children) {
-    flattenAllNodes(child, list);
-  }
-  return list;
-};
-
-const findNodeByLabel = (node: TreeNode, label: string): TreeNode | null => {
-  if (node.label === label || node.spouse === label) return node;
+const collectNodeMap = (node: TreeNode, map: Record<string, TreeNode>) => {
+  map[node.label] = node;
+  if (node.spouse) map[node.spouse] = node;
   for (const child of node.children || []) {
-    const result = findNodeByLabel(child, label);
-    if (result) return result;
+    collectNodeMap(child, map);
   }
-  return null;
 };
 
 type RawPerson = {
@@ -243,33 +208,44 @@ function parseFamilyData(data: RawPerson[]): TreeNode | null {
   return buildTree(root.id);
 }
 
+const genderSVG = {
+  "m": Skia.SVG.MakeFromString(` <svg fill = "#99c1f1" viewBox = "0 0 1024 1024" xmlns = "http://www.w3.org/2000/svg" stroke = "#99c1f1" ><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M790.796 69.974c97.638 62.577 145.937 166.195 102.252 234.363-43.684 68.155-158.009 67.533-255.638 4.954-20.554-13.167-39.158-28.34-55.278-44.914-29.344 49.669-75.064 96.12-131.427 132.248-137.525 88.148-297.307 89.01-357.183-4.41-59.874-93.429 7.635-238.242 145.158-326.379 120.735-77.387 259.611-87.9 332.142-24.458 55.457-31.939 143.36-20.514 219.974 28.595zm-22.103 34.485C697.992 59.14 619.007 52.323 581.575 83.608c-8.543 7.14-21.224 6.147-28.552-2.235-51.882-59.346-178.937-53.675-292.24 18.949C139.921 177.78 83 299.883 128.008 370.114c45.007 70.222 179.733 69.495 300.594-7.973 60.266-38.629 106.678-89.872 130.682-142.285 6.407-13.989 25.374-16.182 34.804-4.023 17.11 22.063 39.407 42.305 65.422 58.971 80.971 51.901 170.239 52.387 199.054 7.431 28.82-44.972-8.893-125.879-89.869-177.777zM644.292 725.473c-23.084 56.99-78.553 95.067-141.1 95.067-64.658 0-121.603-40.688-143.194-100.515-3.84-10.639-15.577-16.151-26.216-12.312s-16.151 15.577-12.312 26.216C348.875 809.866 421.137 861.5 503.191 861.5c79.372 0 149.768-48.323 179.064-120.649 4.246-10.483-.81-22.424-11.293-26.671s-22.424.81-26.671 11.293zM431.539 564.727c0 35.809-29.03 64.84-64.84 64.84-35.799 0-64.829-29.03-64.829-64.84s29.03-64.829 64.829-64.829c35.809 0 64.84 29.02 64.84 64.829zm286.035 0c0 35.809-29.03 64.84-64.829 64.84-35.809 0-64.84-29.03-64.84-64.84s29.03-64.829 64.84-64.829c35.799 0 64.829 29.02 64.829 64.829z"></path><path d="M830.028 354.497c48.869 67.116 75.6 147.862 75.6 232.691 0 218.621-177.252 395.858-395.899 395.858-218.655 0-395.909-177.236-395.909-395.858 0-58.221 12.576-114.635 36.531-166.306 4.757-10.262.295-22.437-9.966-27.194s-22.437-.295-27.194 9.966c-26.445 57.04-40.33 119.33-40.33 183.534 0 241.245 195.593 436.818 436.869 436.818 241.267 0 436.859-195.575 436.859-436.818 0-93.567-29.521-182.738-83.448-256.801-6.658-9.144-19.467-11.159-28.611-4.501s-11.159 19.467-4.501 28.611z"></path></g></svg>`)!,
+  "f": Skia.SVG.MakeFromString(`<svg fill="#f66151" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M644.38 710.114c-21.088 52.039-71.732 86.806-128.844 86.806-59.023 0-111.022-37.159-130.731-91.78-3.839-10.639-15.576-16.152-26.216-12.313s-16.152 15.576-12.313 26.216c25.523 70.732 92.839 118.837 169.26 118.837 73.937 0 139.505-45.012 166.805-112.383 4.248-10.483-.806-22.424-11.289-26.672s-22.424.806-26.672 11.289zM443.965 572.09c0 33.065-26.798 59.863-59.863 59.863-33.055 0-59.863-26.798-59.863-59.863s26.808-59.863 59.863-59.863c33.065 0 59.863 26.798 59.863 59.863zm264.115 0c0 33.065-26.798 59.863-59.873 59.863-33.055 0-59.853-26.798-59.853-59.863s26.798-59.863 59.853-59.863c33.075 0 59.873 26.798 59.873 59.863z"></path><path d="M828.728 421.744c33.48 55.929 51.415 119.916 51.415 186.591 0 200.985-162.965 363.93-363.981 363.93-201.022 0-363.981-162.941-363.981-363.93 0-69.399 19.435-135.867 55.547-193.341 6.017-9.577 3.132-22.219-6.446-28.237s-22.219-3.132-28.237 6.446c-40.184 63.955-61.824 137.966-61.824 215.132 0 223.611 181.298 404.89 404.941 404.89 223.636 0 404.941-181.282 404.941-404.89 0-74.136-19.971-145.385-57.231-207.629-5.809-9.705-18.386-12.863-28.091-7.053s-12.863 18.386-7.053 28.091z"></path><path d="M174.775 769.565H54.68c-7.576 0-13.722-6.144-13.722-13.722v-218.88c0-262.63 212.895-475.525 475.525-475.525 257.671 0 466.555 208.89 466.555 466.565v227.84c0 7.583-6.14 13.722-13.732 13.722H863.179c-11.311 0-20.48 9.169-20.48 20.48s9.169 20.48 20.48 20.48h106.127c30.211 0 54.692-24.475 54.692-54.682v-227.84c0-280.297-227.222-507.525-507.515-507.525C231.232 20.478-.002 251.712-.002 536.963v218.88c0 30.201 24.486 54.682 54.682 54.682h120.095c11.311 0 20.48-9.169 20.48-20.48s-9.169-20.48-20.48-20.48z"></path><path d="M191.305 425.21h650.353c11.311 0 20.48-9.169 20.48-20.48s-9.169-20.48-20.48-20.48H191.305c-11.311 0-20.48 9.169-20.48 20.48s9.169 20.48 20.48 20.48z"></path></g></svg>`)!,
+  "u": Skia.SVG.MakeFromString(`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <circle cx="12" cy="6" r="4" stroke="#999999" stroke-width="1.5"></circle> <path d="M15 20.6151C14.0907 20.8619 13.0736 21 12 21C8.13401 21 5 19.2091 5 17C5 14.7909 8.13401 13 12 13C15.866 13 19 14.7909 19 17C19 17.3453 18.9234 17.6804 18.7795 18" stroke="#999999" stroke-width="1.5" stroke-linecap="round"></path> </g></svg>`)!
+}
 
 export default function UserTest() {
-  const { data } = useLocalSearchParams()
+  const { data }: any = useLocalSearchParams()
   const font = useFont(require("../../assets/fonts/Roboto-Regular.ttf"), fontSize);
   const image = useImage(require("../../assets/images/icon.png"));
-  const { width, height } = useWindowDimensions()
+  const { width, height } = useWindowDimensions();
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
+  const [scrollPos, setScrollPos] = useState({ x: 0, y: 0 });
 
-  // const tree: TreeNode = parseFamilyData(JSON.parse(data))
+  const tree: any = parseFamilyData(JSON.parse(data))
 
-  const layout = layoutTree(tree, expandedMap);
-  const { nodes, lines } = flattenTree(layout, [], [], expandedMap);
-  const allNodes = flattenAllNodes(layout);
+  const layout = useMemo(() => layoutTree(tree, expandedMap), [expandedMap]);
+  const { nodes, lines } = useMemo(() => flattenTree(layout, [], [], expandedMap), [layout, expandedMap]);
 
   const canvasWidth = Math.max(width, layout.totalWidth);
   const canvasHeight = Math.max(height, layout.y + 3 * verticalSpacing);
   const xShift = Math.max((width - layout.totalWidth) / 2, 0);
 
+  const nodeMap = useMemo(() => {
+    const map: Record<string, TreeNode> = {};
+    collectNodeMap(tree, map);
+    return map;
+  }, []);
+
   const handleTap = (x: number, y: number) => {
-    for (const node of allNodes) {
+    for (const node of nodes) {
       const left = node.x + xShift;
       const right = left + nodeWidth;
       const top = node.y;
       const bottom = top + nodeHeight;
 
       if (x >= left && x <= right && y >= top && y <= bottom) {
-        const target = findNodeByLabel(tree, node.label);
+        const target = nodeMap[node.label];
         if (target?.children?.length) {
           setExpandedMap((prev) => ({
             ...prev,
@@ -282,16 +258,21 @@ export default function UserTest() {
   };
 
   const gesture = Gesture.Tap().onEnd((e) => {
-    runOnJS(handleTap)(e.x, e.y);
+    runOnJS(handleTap)(e.x + scrollPos.x, e.y + scrollPos.y);
   });
 
-  const canvasKey = JSON.stringify(expandedMap);
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setScrollPos({
+      x: e.nativeEvent.contentOffset.x,
+      y: e.nativeEvent.contentOffset.y,
+    });
+  };
 
   return font && image ? (
     <GestureDetector gesture={gesture}>
-      <ScrollView horizontal>
-        <ScrollView>
-          <Canvas key={canvasKey} style={{ width: canvasWidth, height: canvasHeight, marginTop: 30 }}>
+      <ScrollView horizontal onScroll={onScroll} scrollEventThrottle={16}>
+        <ScrollView onScroll={onScroll} scrollEventThrottle={16}>
+          <Canvas style={{ width: canvasWidth, height: canvasHeight, marginTop: 30 }}>
             {lines.map((line, idx) => (
               <Line
                 key={`line-${idx}`}
@@ -311,29 +292,13 @@ export default function UserTest() {
                   height={nodeHeight}
                   color="#222"
                 />
-                <Mask
-                  mode="luminance"
-                  mask={
-                    <Group>
-                      <Circle
-                        cx={node.x + xShift + nodeWidth / 2}
-                        cy={node.y + 35}
-                        r={25}
-                        color="white"
-                      />
-                    </Group>
-                  }
-                >
-                  <Image
-                    image={image}
-                    x={node.x + xShift + nodeWidth / 2 - 25}
-                    y={node.y + 10}
-                    width={50}
-                    height={50}
-                    fit="cover"
-                  />
-                </Mask>
-
+                <ImageSVG
+                  svg={genderSVG.m}
+                  x={node.x + xShift + nodeWidth / 2 - 25}
+                  y={node.y + 10}
+                  width={50}
+                  height={50}
+                />
                 <Text
                   x={node.x + xShift + 5}
                   y={node.y + 70 + 4}
