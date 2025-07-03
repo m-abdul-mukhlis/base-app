@@ -1,3 +1,4 @@
+import ComponentButton from "@/components/Button";
 import ComponentHeader from "@/components/Header";
 import ComponentScroll from "@/components/Scroll";
 import { Text, View } from "@/components/Themed";
@@ -96,6 +97,19 @@ export default function GenealogyIndex() {
           })
         }
       </ComponentScroll>
+      {
+        data &&
+        <ComponentButton
+          title="SHOW TREE"
+          icons="trending-up"
+          onPress={() => {
+            router.push({
+              pathname: '/user/test',
+              params: { data: JSON.stringify(data) }
+            })
+          }}
+        />
+      }
     </View >
   )
 }

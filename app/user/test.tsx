@@ -32,6 +32,8 @@ type LineSegment = {
   y2: number;
 };
 
+const tree: TreeNode = { "label": "Mbah Suratmi", "spouse": "Mbah Masri", "children": [{ "label": "Arif", "spouse": "Siti", "children": [{ "label": "Muhammad Alfa Rizqi", "children": [] }] }, { "label": "Noor", "spouse": "Ghulam Mubarok", "children": [{ "label": "Daffa", "children": [] }] }, { "label": "Yanti", "spouse": "Sahuri", "children": [{ "label": "Ahmad Dilan Alfarisky", "children": [] }, { "label": "Adit", "children": [] }] }, { "label": "Khamdan Purwadi", "spouse": "Dwi", "children": [{ "label": "Askal", "children": [] }, { "label": "Heni", "children": [] }, { "label": "Dini", "children": [] }] }, { "label": "Sri", "spouse": "Masnan", "children": [{ "label": "Falah", "children": [] }, { "label": "Ulya", "children": [] }] }, { "label": "Eni", "spouse": "Mundakir", "children": [{ "label": "Muhammad Abdul Mukhlis", "spouse": "Noor Aidha Amilia", "children": [{ "label": "Muhammad Daffin Atharrazka", "children": [] }] }, { "label": "Ikha Sri Rahayu", "spouse": ". ", "children": [{ "label": "Habibah Qidzama Latifah", "children": [] }] }] }, { "label": "Noor Taufiq", "spouse": "Mul", "children": [{ "label": "Nanda", "children": [] }, { "label": "Nurul", "children": [] }] }, { "label": "Endang", "spouse": "Solikhul Hadi", "children": [{ "label": "Anang", "children": [] }, { "label": "Ana", "spouse": "Aris", "children": [{ "label": "Nabil Sakha Alfarizi", "children": [] }] }, { "label": "Dewi", "spouse": "Tain", "children": [{ "label": "Daffin", "children": [] }, { "label": "Faruq", "children": [] }] }, { "label": "Hanik", "spouse": "Arif", "children": [{ "label": "Hasna", "children": [] }, { "label": "Muham", "children": [] }] }] }] }
+
 // const tree: TreeNode = {
 //   label: "Root",
 //   spouse: "Root Spouse",
@@ -164,15 +166,12 @@ const findNodeByLabel = (node: TreeNode, label: string): TreeNode | null => {
 };
 
 type RawPerson = {
-  data: {
-    id: string;
-    name: string;
-    gender: string;
-    par_rel: string[];
-    rel_id?: string[];
-    created: any
-  };
   id: string;
+  name: string;
+  gender: string;
+  par_rel: string[];
+  rel_id?: string[];
+  created: any
 };
 
 function parseFamilyData(data: RawPerson[]): TreeNode | null {
@@ -183,7 +182,7 @@ function parseFamilyData(data: RawPerson[]): TreeNode | null {
   data.forEach((item) => peopleMap.set(item.id, item));
 
   for (const item of data) {
-    const rel_id = item.data.rel_id;
+    const rel_id = item.rel_id;
     if (rel_id && rel_id.length === 2) {
       spouseMap.set(rel_id[0], rel_id[1]);
       spouseMap.set(rel_id[1], rel_id[0]);
@@ -191,7 +190,7 @@ function parseFamilyData(data: RawPerson[]): TreeNode | null {
   }
 
   for (const item of data) {
-    const par = item.data.par_rel;
+    const par = item.par_rel;
     if (par && par.length === 2 && par[0] !== "undefined" && par[1] !== "undefined") {
       const key = [par[0], par[1]].sort().join("-");
       if (!childrenMap.has(key)) childrenMap.set(key, []);
@@ -199,7 +198,7 @@ function parseFamilyData(data: RawPerson[]): TreeNode | null {
     }
   }
 
-  const root = data.find((item) => item.data.par_rel.includes("0"));
+  const root = data.find((item) => item.par_rel.includes("0"));
   if (!root) return null;
 
   function buildTree(personId: string, visited = new Set<string>()): TreeNode | null {
@@ -209,12 +208,12 @@ function parseFamilyData(data: RawPerson[]): TreeNode | null {
     const person = peopleMap.get(personId);
     if (!person) return null;
 
-    const node: TreeNode = { label: person.data.name };
+    const node: TreeNode = { label: person.name };
 
     const spouseId = spouseMap.get(personId);
     if (spouseId) {
       const spouse = peopleMap.get(spouseId);
-      if (spouse) node.spouse = spouse.data.name;
+      if (spouse) node.spouse = spouse.name;
     }
 
     const key = spouseId
@@ -223,9 +222,10 @@ function parseFamilyData(data: RawPerson[]): TreeNode | null {
 
     let children = key ? childrenMap.get(key) || [] : [];
 
+    // Sort children by creation time ascending
     children.sort((a, b) => {
-      const aCreated = peopleMap.get(a)?.data.created;
-      const bCreated = peopleMap.get(b)?.data.created;
+      const aCreated = peopleMap.get(a)?.created;
+      const bCreated = peopleMap.get(b)?.created;
       if (!aCreated || !bCreated) return 0;
       if (aCreated.seconds !== bCreated.seconds) {
         return aCreated.seconds - bCreated.seconds;
@@ -243,6 +243,7 @@ function parseFamilyData(data: RawPerson[]): TreeNode | null {
   return buildTree(root.id);
 }
 
+
 export default function UserTest() {
   const { data } = useLocalSearchParams()
   const font = useFont(require("../../assets/fonts/Roboto-Regular.ttf"), fontSize);
@@ -250,7 +251,7 @@ export default function UserTest() {
   const { width, height } = useWindowDimensions()
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
 
-  const tree: TreeNode = parseFamilyData(JSON.parse(data))
+  // const tree: TreeNode = parseFamilyData(JSON.parse(data))
 
   const layout = layoutTree(tree, expandedMap);
   const { nodes, lines } = flattenTree(layout, [], [], expandedMap);
