@@ -68,7 +68,8 @@ const libImage = {
   },
 
   async processImage(result: any, maxDimension?: number): Promise<string> {
-    const URL = "https://base-app-backend-production.up.railway.app/upload"
+    // const URL = "https://base-app-backend-production.up.railway.app/upload"
+    const URL = "https://bengal-powerful-readily.ngrok-free.app/upload"
     try {
       const formData = new FormData();
       formData.append('image', {

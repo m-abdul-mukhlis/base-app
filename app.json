@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": [
-      "android"
+      "android",
+      "ios"
     ],
     "android": {
       "package": "baseapp.bringthecode.id",

@@ -1,6 +1,5 @@
 import UseFirestore from "@/components/useFirestore";
 import useStorage from "@/components/useStorage";
-import libNotification from "@/lib/notification";
 import { serverTimestamp } from "@react-native-firebase/firestore";
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
@@ -56,9 +55,11 @@ const userClass = {
   },
   pushToken(): Promise<any> {
     return new Promise((resolve, reject) => {
-      libNotification?.requestPermission?.(async (token) => {
-        resolve(await this.sendToken(token))
-      })
+      import('@/lib/notification').then(({ default: libNotification }) => {
+        libNotification?.requestPermission?.(async (token) => {
+          resolve(await this.sendToken(token))
+        })
+      });
     })
   }
 }
