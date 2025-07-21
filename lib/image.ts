@@ -1,3 +1,4 @@
+import curl from '@/components/curl';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 
@@ -29,7 +30,7 @@ const libImage = {
       });
 
       if (result?.assets?.[0]) {
-        return await libImage.processImage(result.assets[0], options?.maxDimension);
+        return await this.processImage(result.assets[0], options?.maxDimension);
       }
 
       return "";
@@ -57,7 +58,7 @@ const libImage = {
       });
 
       if (result?.assets?.[0]) {
-        return await libImage.processImage(result.assets[0], options?.maxDimension);
+        return await this.processImage(result.assets[0], options?.maxDimension);
       }
 
       return "";
@@ -71,23 +72,13 @@ const libImage = {
     // const URL = "https://base-app-backend-production.up.railway.app/upload"
     const URL = "https://bengal-powerful-readily.ngrok-free.app/upload"
     try {
-      const formData = new FormData();
-      formData.append('image', {
-        uri: result.uri,
-        name: 'image.jpg',
-        type: 'image/jpeg',
-      } as any);
-
-      const response = await fetch(URL, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      const json = await response.json();
-      return json.url;
+      let url = ""
+      curl.upload(URL, { uri: result?.uri }, (res: any) => {
+        url = res?.url || "";
+      }, (error) => {
+        url = "";
+      })
+      return url
     } catch (err: any) {
       Alert.alert("Upload failed", err.message);
       return "";

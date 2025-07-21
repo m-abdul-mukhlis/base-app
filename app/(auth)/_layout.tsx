@@ -1,18 +1,13 @@
-import { View } from '@/components/Themed';
+import Splash from '@/components/Splash';
 import { useAuth } from '@clerk/clerk-expo';
 import { Redirect, Stack } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator } from 'react-native';
 
 export default function TabLayout() {
   const { isSignedIn, isLoaded } = useAuth()
 
   if (!isLoaded) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator size={"large"} />
-      </View>
-    )
+    return <Splash />
   }
 
   if (isLoaded && isSignedIn) {

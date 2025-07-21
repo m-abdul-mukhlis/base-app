@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Alert, StyleSheet } from 'react-native';
 
 import ComponentButton from '@/components/Button';
 import { View } from '@/components/Themed';
@@ -27,10 +27,27 @@ export default function ModalScreen() {
         icons="arrow-forward"
         title="logout"
         onPress={() => {
-          signOutGoogle().then(() => {
-            userClass.delete()
-            Linking.openURL(Linking.createURL('/'))
-          })
+          Alert.alert(
+            'Confirm Logout',
+            'Are you sure you want to log out?',
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel',
+              },
+              {
+                text: 'Logout',
+                onPress: () => {
+                  signOutGoogle().then(() => {
+                    userClass.delete()
+                    Linking.openURL(Linking.createURL('/'))
+                  })
+                },
+                style: 'destructive',
+              },
+            ],
+            { cancelable: true }
+          );
         }}
       />
     </View>

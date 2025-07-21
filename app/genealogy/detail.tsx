@@ -2,7 +2,7 @@ import ComponentHeader from "@/components/Header";
 import ComponentScroll from "@/components/Scroll";
 import { Text, View } from "@/components/Themed";
 import UseFirestore from "@/components/useFirestore";
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from '@react-navigation/native';
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
@@ -10,18 +10,26 @@ import { useCallback, useState } from "react";
 import { Pressable } from "react-native";
 
 export default function GenealogyDetail() {
-  const { id, name, gender, par_rel, rel_id } = useLocalSearchParams()
+  const { id } = useLocalSearchParams()
   const [relation, setRelation] = useState<any>()
+  const [result, setResult] = useState<any>()
   const [child, setChild] = useState<any>()
   const [parents, setParents] = useState<any>()
 
-  console.log({ id, name, gender, par_rel, rel_id })
-
   useFocusEffect(
-    useCallback(getData, [])
+    useCallback(loadData, [])
   );
 
-  function getData() {
+  function loadData() {
+    UseFirestore().getDocument(["genealogy", "genealogy", "member", String(id)], ({ data }) => {
+      if (data?.id) {
+        setResult(data)
+        getData(data?.rel_id, data?.par_rel)
+      }
+    }, console.warn)
+  }
+
+  function getData(rel_id: string, par_rel: string) {
     if (rel_id && rel_id != "0") {
       getRelations(String(rel_id))
     }
@@ -62,16 +70,25 @@ export default function GenealogyDetail() {
   return (
     <View style={{ flex: 1 }}>
       <ComponentHeader title="ANGGOTA KELUARGA" />
-      <ComponentScroll onRefresh={getData} >
+      <ComponentScroll onRefresh={loadData} >
         <View style={{ height: 115 }}>
           <View style={{ backgroundColor: "#f1f1f1", borderBottomLeftRadius: 20, borderBottomRightRadius: 20, height: 90 }}>
             <Image source={{ uri: "" }} style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#e6e6e6", marginTop: 50, marginLeft: 15 }} contentFit="contain" />
           </View>
+          <Pressable onPress={() => {
+            router.push({
+              pathname: '/genealogy/add',
+              params: { id: id, edit: "1" }
+            })
+          }} style={{ position: "absolute", top: 15, right: 15, flexDirection: "row", alignItems: "center", padding: 5, borderRadius: 5, backgroundColor: "#fff" }}>
+            <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Regular", fontSize: 10 }}>{"Edit"}</Text>
+            <FontAwesome name={"pencil-square"} size={16} color={"#999"} style={{ marginLeft: 5 }} />
+          </Pressable>
         </View>
         <View style={{ marginHorizontal: 15, flexDirection: "row", alignItems: "center" }}>
           <View style={{ flex: 1 }}>
-            <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 14 }}>{name}</Text>
-            <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Light", fontSize: 10 }}>{gender == "m" ? "Laki-Laki" : "Perempuan"}</Text>
+            <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 14 }}>{result?.name}</Text>
+            <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Light", fontSize: 10 }}>{result?.gender == "m" ? "Laki-Laki" : "Perempuan"}</Text>
           </View>
           {
             ((relation && relation?.length != 0) || (child && child?.length != 0)) &&
@@ -82,13 +99,18 @@ export default function GenealogyDetail() {
         <View style={{ height: 1, width: "80%", alignSelf: "center", marginTop: 20 }} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
 
         {
-          par_rel != "0" &&
+          result?.par_rel != "0" &&
           <View style={{ marginHorizontal: 15, marginTop: 20 }}>
             <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 12 }}>{"Orang Tua"}</Text>
             {
               parents && parents?.length > 0 && parents.map((item: any, i: number) => {
                 return (
-                  <Pressable key={i} onPress={() => { }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
+                  <Pressable key={i} onPress={() => {
+                    router.push({
+                      pathname: '/genealogy/detail',
+                      params: { ...item }
+                    })
+                  }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
                     <Image source={{ uri: "" }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
                     <View style={{ marginLeft: 10, flex: 1 }}>
                       <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 12 }}>{item?.name}</Text>
@@ -105,7 +127,12 @@ export default function GenealogyDetail() {
           {
             relation && relation.length > 0 && relation.map((item: any, i: number) => {
               return (
-                <Pressable key={i} onPress={() => { }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
+                <Pressable key={i} onPress={() => {
+                  router.push({
+                    pathname: '/genealogy/detail',
+                    params: { ...item }
+                  })
+                }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
                   <Image source={{ uri: "" }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
                   <View style={{ marginLeft: 10, flex: 1 }}>
                     <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 12 }}>{item?.name}</Text>
@@ -152,7 +179,7 @@ export default function GenealogyDetail() {
           <Pressable onPress={() => {
             router.push({
               pathname: '/genealogy/add',
-              params: { par_rel: rel_id }
+              params: { par_rel: result?.rel_id }
             })
           }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6", alignItems: "center", justifyContent: "center" }}>

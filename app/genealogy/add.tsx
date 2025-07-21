@@ -7,18 +7,29 @@ import LibInput, { LibInputRef } from "@/lib/input";
 import { FontAwesome } from "@expo/vector-icons";
 import { serverTimestamp } from "@react-native-firebase/firestore";
 import { router, useLocalSearchParams } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView } from "react-native";
 
 export default function GenealogyAdd() {
-  const { par_rel, id } = useLocalSearchParams()
+  const { par_rel, id, edit } = useLocalSearchParams()
   const [gender, setGender] = useState("m")
   const [name, setName] = useState("")
   const [loading, setLoading] = useState(false)
+  const [data, setData] = useState<any>()
   const inputRef = useRef<LibInputRef>(null)
   const jekel = ["m", "f"]
 
-  function doSave() {
+  useEffect(() => loadData(), [])
+
+  function loadData() {
+    if (id && !!edit)
+      UseFirestore().getDocument(["genealogy", "genealogy", "member", String(id)], ({ data }) => {
+        setGender(data?.gender)
+        setData(data)
+      }, console.warn)
+  }
+
+  function doSave(isEdit: boolean) {
 
     if (name == "") {
       Alert.alert("Nama tidak boleh kosong")
@@ -27,39 +38,49 @@ export default function GenealogyAdd() {
 
     setLoading(true)
 
-    const key = UseFirestore().generateId
-    const data: any = {
-      id: key,
-      name: name,
-      gender: gender,
-      created: serverTimestamp(),
-      par_rel: String(par_rel).split(","),
-    }
-    if (id) {
-      data.rel_id = [key, id]
-    }
-
-    UseFirestore().addDocument(["genealogy", "genealogy", "member", key], data, () => {
-      if (!!id) {
-        UseFirestore().updateDocument(["genealogy", "genealogy", "member", String(id)], [{ key: "rel_id", value: data?.rel_id }], () => { })
+    if (isEdit) {
+      UseFirestore().updateDocument(["genealogy", "genealogy", "member", String(id)], [
+        { key: "name", value: name },
+        { key: "gender", value: gender }
+      ], () => {
+        setLoading(false)
+        router.back()
+      })
+    } else {
+      const key = UseFirestore().generateId
+      const data: any = {
+        id: key,
+        name: name,
+        gender: gender,
+        created: serverTimestamp(),
+        par_rel: String(par_rel).split(","),
       }
-      setName("")
-      inputRef.current?.setText("")
-      setLoading(false)
-      router.back()
-    }, () => setLoading(false))
+      if (id) {
+        data.rel_id = [key, id]
+      }
 
+      UseFirestore().addDocument(["genealogy", "genealogy", "member", key], data, () => {
+        if (!!id) {
+          UseFirestore().updateDocument(["genealogy", "genealogy", "member", String(id)], [{ key: "rel_id", value: data?.rel_id }], () => { })
+        }
+        setName("")
+        inputRef.current?.setText("")
+        setLoading(false)
+        router.back()
+      }, () => setLoading(false))
+    }
 
   }
 
   return (
     <ComponentsKeyboardAvoid style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-        <ComponentHeader title="TAMBAH KELUARGA" />
+        <ComponentHeader title={!!edit ? "UBAH DATA " : "TAMBAH KELUARGA"} />
         <ScrollView keyboardShouldPersistTaps="handled">
           <LibInput
             ref={inputRef}
             placeholder="Nama"
+            defaultValue={data?.name}
             autoCapitalize="words"
             keyboardType="default"
             onChangeText={(t) => {
@@ -79,8 +100,9 @@ export default function GenealogyAdd() {
         </ScrollView>
         <ComponentButton
           title="SIMPAN"
+          loading={loading}
           onPress={() => {
-            doSave()
+            doSave(edit == 1 ? true : false)
           }}
         />
       </View>
