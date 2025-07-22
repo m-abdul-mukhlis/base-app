@@ -10,6 +10,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import libNotification from '@/lib/notification';
+import LibProgress from '@/lib/progress';
 import { ClerkProvider } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { StatusBar } from 'expo-status-bar';
@@ -54,6 +55,7 @@ export default function RootLayout() {
         <SafeAreaView style={{ flex: 1 }}>
           <StatusBar style="dark" translucent />
           <RootLayoutNav />
+          <LibProgress.Component />
         </SafeAreaView>
       </GestureHandlerRootView>
     </KeyboardProvider>

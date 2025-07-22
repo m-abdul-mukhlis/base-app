@@ -1,11 +1,14 @@
 import ComponentButton from "@/components/Button";
 import ComponentHeader from "@/components/Header";
 import ComponentsKeyboardAvoid from "@/components/KeyboardAvoid";
+import ComponentModal, { ComponentModalRef } from "@/components/Modal";
 import { Text, View } from "@/components/Themed";
 import UseFirestore from "@/components/useFirestore";
+import libImage from "@/lib/image";
 import LibInput, { LibInputRef } from "@/lib/input";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { serverTimestamp } from "@react-native-firebase/firestore";
+import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView } from "react-native";
@@ -16,7 +19,9 @@ export default function GenealogyAdd() {
   const [name, setName] = useState("")
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any>()
+  const [image, setImage] = useState<string>("")
   const inputRef = useRef<LibInputRef>(null)
+  const modalRef = useRef<ComponentModalRef>(null);
   const jekel = ["m", "f"]
 
   useEffect(() => loadData(), [])
@@ -77,6 +82,16 @@ export default function GenealogyAdd() {
       <View style={{ flex: 1 }}>
         <ComponentHeader title={!!edit ? "UBAH DATA " : "TAMBAH KELUARGA"} />
         <ScrollView keyboardShouldPersistTaps="handled">
+          <Pressable onPress={() => modalRef.current?.open()}>
+            {
+              image != "" ?
+                <Image source={{ uri: image }} style={{ width: 90, height: 90, borderRadius: 45, backgroundColor: "#e6e6e6", marginTop: 50, alignSelf: "center" }} contentFit="contain" />
+                :
+                <View style={{ width: 90, height: 90, borderRadius: 45, backgroundColor: "#e6e6e6", marginTop: 50, alignSelf: "center", alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name='camera' size={40} color='#f39c12' />
+                </View>
+            }
+          </Pressable>
           <LibInput
             ref={inputRef}
             placeholder="Nama"
@@ -102,10 +117,42 @@ export default function GenealogyAdd() {
           title="SIMPAN"
           loading={loading}
           onPress={() => {
-            doSave(edit == 1 ? true : false)
+            doSave(!!edit ? true : false)
           }}
         />
       </View>
+      <ComponentModal ref={modalRef}>
+        <View style={{ backgroundColor: 'white', borderTopLeftRadius: 15, borderTopRightRadius: 15, paddingTop: 10, paddingBottom: 20 }}>
+          <View style={{ width: 80, height: 5, borderRadius: 2.5, backgroundColor: '#e6e6e6', justifyContent: 'center', alignSelf: 'center' }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable onPress={() => {
+              libImage.fromGallery().then((res) => {
+                console.log(res)
+                setImage(res)
+                modalRef.current?.close()
+              })
+            }} style={{ alignItems: 'center', padding: 20 }}>
+              <View style={{ backgroundColor: '#ecf0f1', width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' }} >
+                <Ionicons name='image' size={40} color='#f39c12' />
+              </View>
+              <Text allowFontScaling={false} style={{ fontFamily: 'InterRegular', fontSize: 10, marginTop: 2 }} >{'Gallery'}</Text>
+            </Pressable>
+            <Pressable onPress={() => {
+              libImage.fromCamera().then((res) => {
+                console.log(res)
+                setImage(res)
+                modalRef.current?.close()
+              })
+            }} style={{ alignItems: 'center', padding: 20 }}>
+              <View style={{ backgroundColor: '#ecf0f1', width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' }} >
+                <Ionicons name='camera' size={40} color='#f39c12' />
+              </View>
+              <Text allowFontScaling={false} style={{ fontFamily: 'InterRegular', fontSize: 10, marginTop: 2 }} >{'Camera'}</Text>
+            </Pressable>
+          </View>
+        </View>
+
+      </ComponentModal>
     </ComponentsKeyboardAvoid>
   )
 }

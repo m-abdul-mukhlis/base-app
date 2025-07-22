@@ -99,7 +99,7 @@ export default function GenealogyDetail() {
         <View style={{ height: 1, width: "80%", alignSelf: "center", marginTop: 20 }} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
 
         {
-          result?.par_rel != "0" &&
+          result?.par_rel != "0" && parents && parents?.length > 0 &&
           <View style={{ marginHorizontal: 15, marginTop: 20 }}>
             <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 12 }}>{"Orang Tua"}</Text>
             {

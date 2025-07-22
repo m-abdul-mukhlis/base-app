@@ -1,9 +1,22 @@
 import curl from '@/components/curl';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 import { Alert } from 'react-native';
+import { navigateWithResult } from './navigation';
+import LibProgress from './progress';
+
+const openCroppper = (image: string, forceCrop: boolean, ratio: string, result: (data: any) => void) => {
+  navigateWithResult(router, "/crop", { image, forceCrop, ratio }).then(result)
+};
 
 const libImage = {
-  async fromCamera(options?: { maxDimension?: number }): Promise<string> {
+  async fromCamera(options?: {
+    crop: {
+      ratio: string,
+      forceCrop: boolean,
+      message?: string
+    }, maxDimension?: number
+  }): Promise<string> {
     try {
       let { status } = await ImagePicker.getCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -30,7 +43,22 @@ const libImage = {
       });
 
       if (result?.assets?.[0]) {
-        return await this.processImage(result.assets[0], options?.maxDimension);
+        if (options?.crop) {
+          const imageCropURI: string = await new Promise((resolve) => {
+            openCroppper(
+              result.assets[0].uri,
+              options.crop.forceCrop,
+              options.crop.ratio,
+              async (data) => {
+                const imageURI = await this.processImage({ uri: data?.uri }, options?.maxDimension);
+                resolve(imageURI)
+              }
+            );
+          });
+          return imageCropURI
+        } else {
+          return await this.processImage(result.assets[0], options?.maxDimension);
+        }
       }
 
       return "";
@@ -40,7 +68,13 @@ const libImage = {
     }
   },
 
-  async fromGallery(options?: { maxDimension?: number }): Promise<string> {
+  async fromGallery(options?: {
+    crop: {
+      ratio: string,
+      forceCrop: boolean,
+      message?: string
+    }, maxDimension?: number
+  }): Promise<string> {
     try {
       let { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
@@ -58,7 +92,22 @@ const libImage = {
       });
 
       if (result?.assets?.[0]) {
-        return await this.processImage(result.assets[0], options?.maxDimension);
+        if (options?.crop) {
+          const imageCropURI: string = await new Promise((resolve) => {
+            openCroppper(
+              result.assets[0].uri,
+              options.crop.forceCrop,
+              options.crop.ratio,
+              async (data) => {
+                const imageURI = await this.processImage({ uri: data?.uri }, options?.maxDimension);
+                resolve(imageURI)
+              }
+            );
+          });
+          return imageCropURI
+        } else {
+          return await this.processImage(result.assets[0], options?.maxDimension);
+        }
       }
 
       return "";
@@ -72,14 +121,23 @@ const libImage = {
     // const URL = "https://base-app-backend-production.up.railway.app/upload"
     const URL = "https://bengal-powerful-readily.ngrok-free.app/upload"
     try {
-      let url = ""
-      curl.upload(URL, { uri: result?.uri }, (res: any) => {
-        url = res?.url || "";
-      }, (error) => {
-        url = "";
-      })
-      return url
+      const url = await new Promise<string>((resolve, reject) => {
+        LibProgress.show()
+        curl.upload(URL, { uri: result?.uri },
+          (res: any) => {
+            LibProgress.hide()
+            resolve(res?.url || "");
+          },
+          (error: any) => {
+            LibProgress.hide()
+            reject(new Error("Upload failed"));
+          }
+        );
+      });
+
+      return url;
     } catch (err: any) {
+      LibProgress.hide()
       Alert.alert("Upload failed", err.message);
       return "";
     }

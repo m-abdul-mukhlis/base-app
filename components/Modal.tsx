@@ -6,6 +6,7 @@ import React, {
 } from 'react';
 import {
   Dimensions,
+  LayoutChangeEvent,
   Pressable,
   StyleSheet,
   View,
@@ -22,9 +23,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const MODAL_HEIGHT = SCREEN_HEIGHT / 2;
-const THRESHOLD = MODAL_HEIGHT / 4;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const MAX_HEIGHT = SCREEN_HEIGHT / 2;
+const CLOSE_THRESHOLD = 100;
 
 export type ComponentModalRef = {
   open: () => void;
@@ -36,57 +37,75 @@ type Props = {
   children: React.ReactNode;
 };
 
-const ComponentModal = forwardRef<ComponentModalRef, Props>(({ onClose, children }, ref) => {
-  const translateY = useSharedValue(MODAL_HEIGHT);
-  const offsetY = useSharedValue(0);
+const ComponentModal = forwardRef<ComponentModalRef, Props>(
+  ({ onClose, children }, ref) => {
+    const [visible, setVisible] = useState(false);
+    // const [contentHeight, setContentHeight] = useState(0);
+    const contentHeight = useSharedValue(0)
 
-  const [visible, setVisible] = useState(false);
+    const translateY = useSharedValue(MAX_HEIGHT);
+    const offsetY = useSharedValue(0);
 
-  const close = useCallback(() => {
-    translateY.value = withTiming(MODAL_HEIGHT, { duration: 300 }, () => {
-      runOnJS(setVisible)(false);
-      if (onClose) runOnJS(onClose)();
-    });
-  }, []);
+    const open = useCallback(() => {
+      setVisible(true);
+      translateY.value = withTiming(0, { duration: 300 });
+    }, []);
 
-  const open = useCallback(() => {
-    setVisible(true);
-    translateY.value = withTiming(0, { duration: 300 });
-  }, []);
+    const close = useCallback(() => {
+      offsetY.value = 0; // 🛠 Reset drag offset immediately
+      translateY.value = withTiming(MAX_HEIGHT, { duration: 300 }, () => {
+        runOnJS(setVisible)(false);
+        if (onClose) runOnJS(onClose)();
+      });
+    }, []);
 
-  useImperativeHandle(ref, () => ({ open, close }));
+    useImperativeHandle(ref, () => ({ open, close }));
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value + offsetY.value }],
-  }));
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [{ translateY: translateY.value + offsetY.value }],
+    }));
 
-  const panGesture = Gesture.Pan()
-    .onUpdate((e) => {
-      if (e.translationY > 0) {
-        offsetY.value = e.translationY;
-      }
-    })
-    .onEnd(() => {
-      if (offsetY.value > THRESHOLD) {
-        runOnJS(close)();
-      } else {
-        offsetY.value = withSpring(0);
-      }
-    });
+    const gesture = Gesture.Pan()
+      .onUpdate((e) => {
+        if (e.translationY > 0) {
+          offsetY.value = e.translationY;
+        }
+      })
+      .onEnd(() => {
+        if (offsetY.value > contentHeight.value / 2) {
+          runOnJS(close)(); // ✅ Resets offsetY
+        } else {
+          offsetY.value = withSpring(0); // ✅ Snap back
+        }
+      });
 
-  if (!visible) return null;
 
-  return (
-    <View style={styles.wrapper} pointerEvents="box-none">
-      <Pressable style={styles.overlay} onPress={() => close()} />
-      <GestureDetector gesture={panGesture}>
-        <Animated.View style={[styles.modal, animatedStyle]}>
-          {children}
-        </Animated.View>
-      </GestureDetector>
-    </View>
-  );
-});
+    const onLayout = (e: LayoutChangeEvent) => {
+      const height = e.nativeEvent.layout.height;
+      contentHeight.value = Math.min(height, MAX_HEIGHT)
+    };
+
+    if (!visible) return null;
+
+    return (
+      <View style={styles.wrapper}>
+        <Pressable style={styles.overlay} onPress={close} />
+        <GestureDetector gesture={gesture}>
+          <Animated.View
+            onLayout={onLayout}
+            style={[
+              styles.modal,
+              animatedStyle,
+              { maxHeight: MAX_HEIGHT, height: 'auto' },
+            ]}
+          >
+            {children}
+          </Animated.View>
+        </GestureDetector>
+      </View>
+    );
+  }
+);
 
 export default ComponentModal;
 
@@ -94,17 +113,16 @@ const styles = StyleSheet.create({
   wrapper: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
-    zIndex: 100,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#00000066',
   },
   modal: {
-    height: MODAL_HEIGHT,
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 16,
+    overflow: 'hidden',
   },
 });

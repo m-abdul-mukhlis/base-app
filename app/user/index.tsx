@@ -61,7 +61,9 @@ export default function UserIndex() {
             <Ionicons name="camera" size={60} color={"#909090"} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => {
-            libImage.fromGallery().then((res) => {
+            // libImage.fromGallery().then((res) => {
+              libImage.fromGallery({ crop: { forceCrop: true, ratio: "1:1" } }).then((res) => {
+              console.log({ res })
               setImage(res)
             })
           }} style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
