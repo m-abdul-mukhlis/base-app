@@ -30,6 +30,9 @@ export default function GenealogyAdd() {
     if (id && !!edit)
       UseFirestore().getDocument(["genealogy", "genealogy", "member", String(id)], ({ data }) => {
         setGender(data?.gender)
+        if (data?.image && data?.image != "") {
+          setImage(data?.image)
+        }
         setData(data)
       }, console.warn)
   }
@@ -46,7 +49,8 @@ export default function GenealogyAdd() {
     if (isEdit) {
       UseFirestore().updateDocument(["genealogy", "genealogy", "member", String(id)], [
         { key: "name", value: name },
-        { key: "gender", value: gender }
+        { key: "gender", value: gender },
+        { key: "image", value: image }
       ], () => {
         setLoading(false)
         router.back()
@@ -66,7 +70,10 @@ export default function GenealogyAdd() {
 
       UseFirestore().addDocument(["genealogy", "genealogy", "member", key], data, () => {
         if (!!id) {
-          UseFirestore().updateDocument(["genealogy", "genealogy", "member", String(id)], [{ key: "rel_id", value: data?.rel_id }], () => { })
+          UseFirestore().updateDocument(["genealogy", "genealogy", "member", String(id)], [
+            { key: "rel_id", value: data?.rel_id },
+            { key: "image", value: image }
+          ], () => { })
         }
         setName("")
         inputRef.current?.setText("")
@@ -126,8 +133,7 @@ export default function GenealogyAdd() {
           <View style={{ width: 80, height: 5, borderRadius: 2.5, backgroundColor: '#e6e6e6', justifyContent: 'center', alignSelf: 'center' }} />
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
             <Pressable onPress={() => {
-              libImage.fromGallery().then((res) => {
-                console.log(res)
+              libImage.fromGallery({ crop: { forceCrop: true, ratio: "1:1" } }).then((res) => {
                 setImage(res)
                 modalRef.current?.close()
               })
@@ -138,8 +144,7 @@ export default function GenealogyAdd() {
               <Text allowFontScaling={false} style={{ fontFamily: 'InterRegular', fontSize: 10, marginTop: 2 }} >{'Gallery'}</Text>
             </Pressable>
             <Pressable onPress={() => {
-              libImage.fromCamera().then((res) => {
-                console.log(res)
+              libImage.fromCamera({ crop: { forceCrop: true, ratio: "1:1" } }).then((res) => {
                 setImage(res)
                 modalRef.current?.close()
               })
@@ -153,6 +158,6 @@ export default function GenealogyAdd() {
         </View>
 
       </ComponentModal>
-    </ComponentsKeyboardAvoid>
+    </ComponentsKeyboardAvoid >
   )
 }
