@@ -73,7 +73,7 @@ export default function GenealogyDetail() {
       <ComponentScroll onRefresh={loadData} >
         <View style={{ height: 115 }}>
           <View style={{ backgroundColor: "#f1f1f1", borderBottomLeftRadius: 20, borderBottomRightRadius: 20, height: 90 }}>
-            <Image source={{ uri: "" }} style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#e6e6e6", marginTop: 50, marginLeft: 15 }} contentFit="contain" />
+            <Image source={{ uri: result?.image || "" }} style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#e6e6e6", marginTop: 50, marginLeft: 15 }} contentFit="contain" />
           </View>
           <Pressable onPress={() => {
             router.push({

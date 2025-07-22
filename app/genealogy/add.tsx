@@ -30,6 +30,7 @@ export default function GenealogyAdd() {
     if (id && !!edit)
       UseFirestore().getDocument(["genealogy", "genealogy", "member", String(id)], ({ data }) => {
         setGender(data?.gender)
+        setName(data?.name)
         if (data?.image && data?.image != "") {
           setImage(data?.image)
         }

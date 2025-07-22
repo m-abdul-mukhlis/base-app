@@ -73,7 +73,7 @@ export default function GenealogyIndex() {
                   params: { ...item }
                 })
               }} style={{ flexDirection: "row", alignItems: "center", marginHorizontal: 15, marginTop: 15, marginBottom: 5 }}>
-                <Image source={{ uri: "" }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
+                <Image source={{ uri: item?.image || "" }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
                 <View style={{ marginLeft: 10, flex: 1 }}>
                   <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Medium", fontSize: 12 }}>{item?.name}</Text>
                   <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Light", fontSize: 10 }}>{item?.gender == "m" ? "Laki-Laki" : "Perempuan"}</Text>
