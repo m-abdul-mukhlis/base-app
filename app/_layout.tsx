@@ -79,6 +79,7 @@ function RootLayoutNav() {
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="user" options={{ headerShown: false }} />
           <Stack.Screen name="genealogy" options={{ headerShown: false }} />
+          <Stack.Screen name="exinpockey" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
         </Stack>
       </ThemeProvider>

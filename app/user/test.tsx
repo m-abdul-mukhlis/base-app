@@ -229,7 +229,19 @@ export default function UserTest() {
   const { data }: any = useLocalSearchParams();
   const font = useFont(require("../../assets/fonts/Roboto-Regular.ttf"), fontSize);
   const { width, height } = useWindowDimensions();
-  const tree = parseFamilyData(JSON.parse(data));
+
+  // let newData: any[] = []
+  // try {
+  //   if (data) {
+  //     newData = typeof data === "string" ? JSON.parse(data) : data
+  //   }
+  // } catch (e) {
+  //   console.warn("Failed to parse old data:", e)
+  //   newData = []
+  // }
+
+  // const tree = parseFamilyData(newData);
+  const tree = parseFamilyData(JSON.parse(data || "[]"));
   const [scrollPos, setScrollPos] = useState({ x: 0, y: 0 });
 
   const [expandedMap, setExpandedMap] = useState(() => {
@@ -285,7 +297,7 @@ export default function UserTest() {
     });
   };
 
-  return font && layout ? (
+  return font && layout && data ? (
     <GestureDetector gesture={gesture}>
       <ScrollView horizontal onScroll={onScroll} scrollEventThrottle={16}>
         <ScrollView onScroll={onScroll} scrollEventThrottle={16}>

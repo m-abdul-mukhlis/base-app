@@ -5,11 +5,12 @@ import { Text, View } from "@/components/Themed";
 import UseFirestore from "@/components/useFirestore";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, TextInput } from "react-native";
 
 export default function GenealogyIndex() {
+  const { path_id } = useLocalSearchParams<{ path_id: string }>()
   const [data, setData] = useState<any>()
   const [query, setQuery] = useState<any>("")
   const inputRef = useRef<TextInput>(null)
@@ -21,7 +22,7 @@ export default function GenealogyIndex() {
   }, [])
 
   function load() {
-    UseFirestore().getCollectionOrderBy(["genealogy", "genealogy", "member"], [["created", "asc"]], (result) => {
+    UseFirestore().getCollectionOrderBy(["genealogy", path_id, "member"], [["created", "asc"]], (result) => {
       result.forEach((v: any) => {
         res.push({ ...v.data })
       })
@@ -70,7 +71,7 @@ export default function GenealogyIndex() {
               <Pressable key={i} onPress={() => {
                 router.push({
                   pathname: '/genealogy/detail',
-                  params: { ...item }
+                  params: { ...item, path_id }
                 })
               }} style={{ flexDirection: "row", alignItems: "center", marginHorizontal: 15, marginTop: 15, marginBottom: 5 }}>
                 <Image source={{ uri: item?.image || "" }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
@@ -105,7 +106,7 @@ export default function GenealogyIndex() {
           onPress={() => {
             router.push({
               pathname: '/user/test',
-              params: { data: JSON.stringify(data) }
+              params: { data: JSON.stringify(data), path_id }
             })
           }}
         />

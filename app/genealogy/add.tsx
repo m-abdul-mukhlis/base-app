@@ -15,6 +15,7 @@ import { Alert, Pressable, ScrollView } from "react-native";
 
 export default function GenealogyAdd() {
   const { par_rel, id, edit } = useLocalSearchParams()
+  const { path_id } = useLocalSearchParams<{ path_id: string }>()
   const [gender, setGender] = useState("m")
   const [name, setName] = useState("")
   const [loading, setLoading] = useState(false)
@@ -28,7 +29,7 @@ export default function GenealogyAdd() {
 
   function loadData() {
     if (id && !!edit)
-      UseFirestore().getDocument(["genealogy", "genealogy", "member", String(id)], ({ data }) => {
+      UseFirestore().getDocument(["genealogy", path_id, "member", String(id)], ({ data }) => {
         setGender(data?.gender)
         setName(data?.name)
         if (data?.image && data?.image != "") {
@@ -48,7 +49,7 @@ export default function GenealogyAdd() {
     setLoading(true)
 
     if (isEdit) {
-      UseFirestore().updateDocument(["genealogy", "genealogy", "member", String(id)], [
+      UseFirestore().updateDocument(["genealogy", path_id, "member", String(id)], [
         { key: "name", value: name },
         { key: "gender", value: gender },
         { key: "image", value: image }
@@ -69,9 +70,9 @@ export default function GenealogyAdd() {
         data.rel_id = [key, id]
       }
 
-      UseFirestore().addDocument(["genealogy", "genealogy", "member", key], data, () => {
+      UseFirestore().addDocument(["genealogy", path_id, "member", key], data, () => {
         if (!!id) {
-          UseFirestore().updateDocument(["genealogy", "genealogy", "member", String(id)], [
+          UseFirestore().updateDocument(["genealogy", path_id, "member", String(id)], [
             { key: "rel_id", value: data?.rel_id },
             { key: "image", value: image }
           ], () => { })

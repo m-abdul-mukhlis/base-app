@@ -5,6 +5,7 @@ export default function GenealogyLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="detail" />
       <Stack.Screen name="add" />
+      <Stack.Screen name="family_add" />
     </Stack>
   )
 }

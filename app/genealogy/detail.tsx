@@ -11,6 +11,7 @@ import { Pressable } from "react-native";
 
 export default function GenealogyDetail() {
   const { id } = useLocalSearchParams()
+  const { path_id } = useLocalSearchParams<{ path_id: string }>()
   const [relation, setRelation] = useState<any>()
   const [result, setResult] = useState<any>()
   const [child, setChild] = useState<any>()
@@ -21,7 +22,7 @@ export default function GenealogyDetail() {
   );
 
   function loadData() {
-    UseFirestore().getDocument(["genealogy", "genealogy", "member", String(id)], ({ data }) => {
+    UseFirestore().getDocument(["genealogy", path_id, "member", String(id)], ({ data }) => {
       if (data?.id) {
         setResult(data)
         getData(data?.rel_id, data?.par_rel)
@@ -41,7 +42,7 @@ export default function GenealogyDetail() {
   function getRelations(rel_id: string) {
     const relation = rel_id?.split(",")
     // get relation
-    UseFirestore().getCollectionWhere(["genealogy", "genealogy", "member"], [["rel_id", "array-contains-any", relation]], (data) => {
+    UseFirestore().getCollectionWhere(["genealogy", path_id, "member"], [["rel_id", "array-contains-any", relation]], (data) => {
       if (data.length > 0) {
         const rel = data.filter((item: any) => item.id != id).map((item: any) => ({ ...item.data }))
         setRelation(rel)
@@ -49,7 +50,7 @@ export default function GenealogyDetail() {
     }, console.warn)
 
     //get children
-    UseFirestore().getCollectionWhere(["genealogy", "genealogy", "member"], [["par_rel", "array-contains-any", relation]], (data) => {
+    UseFirestore().getCollectionWhere(["genealogy", path_id, "member"], [["par_rel", "array-contains-any", relation]], (data) => {
       if (data.length > 0) {
         const chil = data.map((item: any) => ({ ...item.data }))
         setChild(chil)
@@ -59,7 +60,7 @@ export default function GenealogyDetail() {
 
   function getParents(par_rel: string) {
     const par = par_rel?.split(",")
-    UseFirestore().getCollectionWhere(["genealogy", "genealogy", "member"], [["id", "in", par]], (data) => {
+    UseFirestore().getCollectionWhere(["genealogy", path_id, "member"], [["id", "in", par]], (data) => {
       if (data.length > 0) {
         const pare = data.map((item: any) => ({ ...item.data }))
         setParents(pare)
@@ -78,7 +79,7 @@ export default function GenealogyDetail() {
           <Pressable onPress={() => {
             router.push({
               pathname: '/genealogy/add',
-              params: { id: id, edit: "1" }
+              params: { id: id, edit: "1", path_id }
             })
           }} style={{ position: "absolute", top: 15, right: 15, flexDirection: "row", alignItems: "center", padding: 5, borderRadius: 5, backgroundColor: "#fff" }}>
             <Text allowFontScaling={false} style={{ fontFamily: "Roboto-Regular", fontSize: 10 }}>{"Edit"}</Text>
@@ -108,7 +109,7 @@ export default function GenealogyDetail() {
                   <Pressable key={i} onPress={() => {
                     router.push({
                       pathname: '/genealogy/detail',
-                      params: { ...item }
+                      params: { ...item, path_id }
                     })
                   }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
                     <Image source={{ uri: "" }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
@@ -130,7 +131,7 @@ export default function GenealogyDetail() {
                 <Pressable key={i} onPress={() => {
                   router.push({
                     pathname: '/genealogy/detail',
-                    params: { ...item }
+                    params: { ...item, path_id }
                   })
                 }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
                   <Image source={{ uri: "" }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
@@ -145,7 +146,7 @@ export default function GenealogyDetail() {
           <Pressable onPress={() => {
             router.push({
               pathname: '/genealogy/add',
-              params: { id: id }
+              params: { id: id, path_id }
             })
           }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6", alignItems: "center", justifyContent: "center" }}>
@@ -164,7 +165,7 @@ export default function GenealogyDetail() {
                 <Pressable key={i} onPress={() => {
                   router.push({
                     pathname: '/genealogy/detail',
-                    params: { ...item }
+                    params: { ...item, path_id }
                   })
                 }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
                   <Image source={{ uri: "" }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6" }} contentFit="contain" />
@@ -179,7 +180,7 @@ export default function GenealogyDetail() {
           <Pressable onPress={() => {
             router.push({
               pathname: '/genealogy/add',
-              params: { par_rel: result?.rel_id }
+              params: { par_rel: result?.rel_id, path_id }
             })
           }} style={{ flexDirection: "row", alignItems: "center", marginTop: 10, marginBottom: 5 }}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e6e6e6", alignItems: "center", justifyContent: "center" }}>

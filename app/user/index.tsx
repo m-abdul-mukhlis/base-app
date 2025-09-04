@@ -1,10 +1,11 @@
 import ComponentModal, { ComponentModalRef } from "@/components/Modal";
 import { Text, View } from "@/components/Themed";
+import UseFirestore from "@/components/useFirestore";
 import libImage from "@/lib/image";
-import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, TouchableOpacity, useWindowDimensions } from "react-native";
 import userClass from "./class";
 
@@ -16,6 +17,7 @@ export default function UserIndex() {
   const menuWidth = (width - 80) * 0.206
   const modalRef = useRef<ComponentModalRef>(null);
   const ic = ["american-football", "boat-outline", "calendar-number-outline", "chatbubbles-outline", "cube-outline"]
+  const [data, setData] = useState<any>([])
 
   const Items = (x: string, i: number) => {
     return (
@@ -28,6 +30,12 @@ export default function UserIndex() {
       </TouchableOpacity>
     )
   }
+
+  useEffect(() => {
+    UseFirestore().getCollection(["genealogy"], (items) => {
+      setData(items.map((doc) => ({ ...doc.data, ...doc })))
+    }, console.warn)
+  }, [])
 
   return (
     <View style={{ flex: 1 }}>
@@ -48,11 +56,22 @@ export default function UserIndex() {
       <ScrollView>
 
         <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 15, flexWrap: "wrap" }}>
-          <TouchableOpacity onPress={() => {
-            router.navigate("/genealogy")
-          }} style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
-            <FontAwesome5 name="tree" size={60} color={"#909090"} />
-          </TouchableOpacity>
+          {
+            data?.map((item: any, index: number) => (
+              <TouchableOpacity key={index} onPress={() => {
+                // router.navigate("/genealogy")
+                router.push({
+                  pathname: '/genealogy',
+                  params: { path_id: item.id }
+                })
+              }} style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
+                <FontAwesome5 name="tree" size={60} color={"#909090"} />
+                <View style={{ alignItems: "center", justifyContent: "center", marginHorizontal: 10, paddingVertical: 3, backgroundColor: "#e6e6e6" }}>
+                  <Text allowFontScaling={false} numberOfLines={2} style={{ textAlign: "center", fontFamily: "Roboto-Medium", fontSize: 12, color: "#2c3e50" }}>{item?.name}</Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          }
           <TouchableOpacity onPress={() => {
             libImage.fromCamera().then((res) => {
               setImage(res)
@@ -62,7 +81,7 @@ export default function UserIndex() {
           </TouchableOpacity>
           <TouchableOpacity onPress={() => {
             // libImage.fromGallery().then((res) => {
-              libImage.fromGallery({ crop: { forceCrop: true, ratio: "1:1" } }).then((res) => {
+            libImage.fromGallery({ crop: { forceCrop: true, ratio: "1:1" } }).then((res) => {
               console.log({ res })
               setImage(res)
             })
@@ -89,6 +108,16 @@ export default function UserIndex() {
         </View>
 
         <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 15, flexWrap: "wrap" }}>
+          <TouchableOpacity onPress={() => {
+            router.navigate('/genealogy/family_add')
+          }} style={{ width: menuWidth, height: menuWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
+            <MaterialCommunityIcons name={"plus-circle"} size={40} color={"#909090"} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => {
+            router.navigate('/exinpockey')
+          }} style={{ width: menuWidth, height: menuWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
+            <MaterialCommunityIcons name={"currency-usd"} size={40} color={"#909090"} />
+          </TouchableOpacity>
           {ic.map(Items)}
         </View>
 
