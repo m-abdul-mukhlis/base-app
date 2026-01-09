@@ -20,10 +20,12 @@ const userClass = {
   },
   async sendToken(token: string) {
     const installationId = await getInstallationID()
+    const instance: any = UseFirestore().instance()
+
     if (userClass.get?.()?.email) {
-      UseFirestore().getDocument(["genealogy", "genealogy", "token", String(installationId)], ({ data }) => {
+      UseFirestore().getDocument(instance, ["genealogy", "genealogy", "token", String(installationId)], ({ data }) => {
         if (data) {
-          UseFirestore().updateDocument(["genealogy", "genealogy", "token", String(installationId)], [
+          UseFirestore().updateDocument(instance, ["genealogy", "genealogy", "token", String(installationId)], [
             { key: "token", value: String(token) },
             // @ts-ignore
             { key: "updated", value: serverTimestamp() }
@@ -48,7 +50,7 @@ const userClass = {
         installationId
       }
 
-      UseFirestore().addDocument(["genealogy", "genealogy", "token", String(installationId)], post, () => {
+      UseFirestore().addDocument(instance, ["genealogy", "genealogy", "token", String(installationId)], post, () => {
         useStorage.setItem("token", token)
       })
     }

@@ -4,7 +4,7 @@ import ComponentScroll from "@/components/Scroll";
 import { View } from "@/components/Themed";
 import UseFirestore from "@/components/useFirestore";
 import LibInput, { LibInputRef } from "@/lib/input";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { serverTimestamp } from "@react-native-firebase/firestore";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
@@ -28,12 +28,13 @@ export default function UserEdit() {
 
   function saveUserData() {
     setLoading(true)
-    UseFirestore().updateDocument(["genealogy", "genealogy", "users", userData.id], [
+    const instance: any = UseFirestore().instance()
+    UseFirestore().updateDocument(instance, ["genealogy", "genealogy", "users", userData.id], [
       { key: "name", value: nameRef.current?.getText?.() || userData?.name || "" },
       { key: "image", value: image },
       { key: "updated", value: serverTimestamp() }
     ], () => {
-      UseFirestore().getDocument(["genealogy", "genealogy", "users", userData.id], (result) => {
+      UseFirestore().getDocument(instance, ["genealogy", "genealogy", "users", userData.id], (result) => {
         userClass.set({ ...result?.data })
         router.back()
         setLoading(false)

@@ -1,5 +1,5 @@
 import { createTimeout } from '@/components/useTImeout';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import React, {
   forwardRef,
   useEffect,

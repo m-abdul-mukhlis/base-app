@@ -1,6 +1,6 @@
-import { MMKV, Mode } from 'react-native-mmkv';
+import { createMMKV } from 'react-native-mmkv';
 
-const storage = new MMKV({ id: "use-storageId", mode: Mode.MULTI_PROCESS })
+const storage = createMMKV({ id: "use-storageId", mode: 'multi-process' })
 
 const useStorage = {
   getItemSync(key: string): string {
@@ -13,7 +13,7 @@ const useStorage = {
     storage.set(key, value)
   },
   removeItem(key: string) {
-    return storage.delete(key)
+    return storage.remove(key)
   },
   clear(): void {
     storage.clearAll()

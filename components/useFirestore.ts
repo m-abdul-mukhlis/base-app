@@ -1,5 +1,13 @@
-import { createUserWithEmailAndPassword, FirebaseAuthTypes, getAuth, signInWithEmailAndPassword } from '@react-native-firebase/auth';
+import userClass from '@/app/user/class';
+import { getApps, initializeApp, ReactNativeFirebase } from '@react-native-firebase/app';
+import { createUserWithEmailAndPassword, FirebaseAuthTypes, getAuth, signInWithEmailAndPassword, signOut } from '@react-native-firebase/auth';
 import { addDoc, collection, deleteDoc, doc, FirebaseFirestoreTypes, getDoc, getDocs, getFirestore, limit, onSnapshot, orderBy, query, setDoc, startAfter, updateDoc, where, writeBatch } from '@react-native-firebase/firestore';
+import { createMMKV } from 'react-native-mmkv';
+
+// @ts-ignore
+import shorthash from "shorthash";
+
+const storage = createMMKV({ id: "firestore" })
 
 const conditionIsNotValid = (where: any[]): boolean => {
   return where[2] == undefined || where[0] == undefined
@@ -35,35 +43,93 @@ const generatePassword = (unique: string, email: string): string => {
 }
 
 let lastVisible: any = null
+const APPS_KEY = 'firebase-user'
 
 type Condition = [fieldPath?: string | number | FirebaseFirestoreTypes.FieldPath, opStr?: FirebaseFirestoreTypes.WhereFilterOp, value?: any];
 type OrderBy = [fieldPath: string | number | FirebaseFirestoreTypes.FieldPath, directionStr?: "asc" | "desc"];
 
 export default function UseFirestore() {
+  // @ts-ignore
+  const defConfig: ReactNativeFirebase.FirebaseAppOptions = {}
+  const defAppName = "[DEFAULT]"
+
+  const user = userClass.get()
+  const email = user?.email || ""
+  const pass = shorthash.unique(email)
+  const password = generatePassword(pass, email)
+
   const castPathToString = (path: any[]): string => {
     const strings = path?.map?.(x => String(x)) || []
     return strings.join("/")
   }
+  function setUserData(appName: string, user: any) {
+    const currentData = getAllUserData()
+    currentData[appName] = user
+    storage.set(APPS_KEY, JSON.stringify(currentData))
+  }
+  function getUserData(appName: string) {
+    const currentData = getAllUserData()
+    return currentData[appName] || {}
+  }
+  function getAllUserData() {
+    const data: any = storage.getString(APPS_KEY)
+    return data ? typeof data == "string" ? JSON.parse(data) : data : {}
+  }
+  function removeAllUserData() {
+    storage.remove(APPS_KEY)
+  }
+
+  const init = async (config = defConfig, appName = defAppName) => {
+    try {
+      const existingApp = getApps().find(app => app.name === appName);
+      let app: ReactNativeFirebase.FirebaseApp
+
+      if (!existingApp) {
+        // @ts-ignore
+        app = initializeApp(config, appName);
+        // console.log('App initialized:', app);
+      } else {
+        // console.log('App already exists:', existingApp.name);
+        app = existingApp;
+      }
+
+      // Check if user data exists
+      if (userClass.get()?.email) {
+        await register(app, email, password, (credential) => {
+          setUserData(appName, credential.user);
+        });
+      }
+
+    } catch (error) {
+      console.error('Error initializing app:', error);
+    }
+  };
+
+  const instance = (appName = defAppName) => {
+    const app = getApps().find(app => app.name === appName);
+    return app || null;
+  };
 
   const register = async (
+    app: ReactNativeFirebase.FirebaseApp,
     email: string,
     password: string,
     callback: (credential: FirebaseAuthTypes.UserCredential) => void
   ) => {
-    const authInstance = getAuth();
+    const authInstance = getAuth(app);
     try {
       const credential = await createUserWithEmailAndPassword(authInstance, email, password);
       callback(credential);
     } catch (error: any) {
       switch (error.code) {
         case 'auth/email-already-in-use':
-          return login(email, password, callback);
+          return login(app, email, password, callback);
         case 'auth/invalid-email':
           console.error('Invalid email address format.');
           break;
         case 'auth/unknown':
           console.warn('Unknown error occurred. Retrying registration.');
-          return register(email, password, callback);
+          return register(app, email, password, callback);
         case 'auth/configuration-not':
           console.error('Authentication is not configured for this Firebase project.');
           break;
@@ -77,11 +143,12 @@ export default function UseFirestore() {
   }
 
   const login = async (
+    app: ReactNativeFirebase.FirebaseApp,
     email: string,
     password: string,
     callback: (credential: FirebaseAuthTypes.UserCredential) => void,
   ) => {
-    const authInstance = getAuth();
+    const authInstance = getAuth(app);
     try {
       const credential = await signInWithEmailAndPassword(authInstance, email, password);
       callback(credential);
@@ -108,22 +175,42 @@ export default function UseFirestore() {
     }
   }
 
-  const getDocument = (path: string[], callback: (data: { id: string, data: any }) => void, error?: () => void) => {
+  const logout = async (): Promise<void> => {
+    try {
+      removeAllUserData();
+      const signOutPromises = getApps().map(async (app: any) => {
+        const authInstance = getAuth(app);
+        await signOut(authInstance);
+      });
+      await Promise.all(signOutPromises);
+      // console.log('All users signed out successfully.');
+    } catch (error: any) {
+      switch (error.code) {
+        case 'auth/no-current-user':
+          console.log('No user signed in.');
+          break;
+        default:
+          console.log('Logout error:', error.message || error);
+      }
+    }
+  }
+
+  const getDocument = (app: ReactNativeFirebase.FirebaseApp, path: string[], callback: (data: { id: string, data: any }) => void, error?: () => void) => {
     const fixedPath = castPathToString(path)
     if (fixedPath.split("/").length % 2 > 0) {
       console.warn("path untuk akses Doc data tidak boleh berhenti di Collection [Firestore.get.doc]")
       return
     }
-    const db = getFirestore()
+    const db = getFirestore(app)
     const ref = doc(db, fixedPath)
     getDoc(ref).then((snapshot: FirebaseFirestoreTypes.DocumentSnapshot) => {
       callback({ data: snapshot.data(), id: snapshot.id })
     }).catch((error))
   }
 
-  const addDocument = (path: string[], value: any, callback: () => void, error?: (error: any) => void) => {
+  const addDocument = (app: ReactNativeFirebase.FirebaseApp, path: string[], value: any, callback: () => void, error?: (error: any) => void) => {
     const fixedPath = castPathToString(path)
-    const db = getFirestore()
+    const db = getFirestore(app)
 
     if (fixedPath.split("/").length % 2 > 0) {
       const docRef = collection(db, fixedPath)
@@ -140,13 +227,13 @@ export default function UseFirestore() {
     }
   }
 
-  const updateDocument = (path: string[], values: { key: string, value: string | number }[], callback: () => void, error?: (error: any) => void) => {
+  const updateDocument = (app: ReactNativeFirebase.FirebaseApp, path: string[], values: { key: string, value: string | number }[], callback: () => void, error?: (error: any) => void) => {
     const fixedPath = castPathToString(path)
     if (fixedPath.split("/").length % 2 > 0) {
       console.warn("path untuk akses Doc data tidak boleh berhenti di Collection [Firestore.update.doc]")
       return
     }
-    const db = getFirestore()
+    const db = getFirestore(app)
     const val = values.map((x) => {
       return { [x.key]: x.value }
     })
@@ -157,7 +244,7 @@ export default function UseFirestore() {
     }).catch(error)
   }
 
-  const updateBatchDocument = (rootPath: string[], documentIds: string[], values: { key: string, value: string | number }[], callback?: (res: any) => void, error?: (error: any) => void) => {
+  const updateBatchDocument = (app: ReactNativeFirebase.FirebaseApp, rootPath: string[], documentIds: string[], values: { key: string, value: string | number }[], callback?: (res: any) => void, error?: (error: any) => void) => {
     const fixedPath = castPathToString(rootPath)
     if (fixedPath.split("/").length % 2 == 0) {
       console.warn("path untuk akses updateBatch cukup berhenti di Collection [Firestore.update.batchDoc]")
@@ -169,7 +256,7 @@ export default function UseFirestore() {
     })
     const newValue = Object.assign({}, ...value)
 
-    const db = getFirestore()
+    const db = getFirestore(app)
     const batch = writeBatch(db)
     const processBatch = async () => {
       const promises = documentIds.map(async (id) => {
@@ -187,26 +274,26 @@ export default function UseFirestore() {
     })
   }
 
-  const deleteDocument = (path: string[], callback: () => void, error?: (error: any) => void) => {
+  const deleteDocument = (app: ReactNativeFirebase.FirebaseApp, path: string[], callback: () => void, error?: (error: any) => void) => {
     const fixedPath = castPathToString(path)
     if (fixedPath.split("/").length % 2 > 0) {
       console.warn("path untuk akses Doc data tidak boleh berhenti di Collection [Firestore.delete.doc]")
       return
     }
-    const db = getFirestore()
+    const db = getFirestore(app)
     const ref = doc(db, fixedPath)
     deleteDoc(ref).then(() => {
       callback()
     }).catch((error))
   }
 
-  const deleteBatchDocument = (rootPath: string[], documentIds: string[], callback?: (res: any) => void, error?: (error: any) => void) => {
+  const deleteBatchDocument = (app: ReactNativeFirebase.FirebaseApp, rootPath: string[], documentIds: string[], callback?: (res: any) => void, error?: (error: any) => void) => {
     const fixedPath = castPathToString(rootPath)
     if (fixedPath.split("/").length % 2 == 0) {
       console.warn("path untuk akses deleteBatch cukup berhenti di Collection [Firestore.delete.batchDoc]")
       return
     }
-    const db = getFirestore()
+    const db = getFirestore(app)
     const batch = writeBatch(db)
 
     const processBatch = async () => {
@@ -225,24 +312,24 @@ export default function UseFirestore() {
     })
   }
 
-  const addCollection = (path: string[], value: any, callback: (data?: { id: string }) => void, error?: (error: any) => void) => {
+  const addCollection = (app: ReactNativeFirebase.FirebaseApp, path: string[], value: any, callback: (data?: { id: string }) => void, error?: (error: any) => void) => {
     const fixedPath = castPathToString(path)
     if (fixedPath.split("/").length % 2 == 0) {
       console.warn("path untuk akses Collection data tidak boleh berhenti di Doc [Firestore.add.collection]")
       return
     }
     const id = (new Date().getTime() / 1000).toFixed(0) + "-" + makeid(5)
-    addDocument([...path, id], value, () => callback({ id }), error)
+    addDocument(app, [...path, id], value, () => callback({ id }), error)
   }
 
-  const getCollectionWhereOrderBy = (path: string[], conditions: Condition[], orderby: OrderBy[], callback: (data: any[]) => void, error?: (error: any) => void, limitasi?: number) => {
+  const getCollectionWhereOrderBy = (app: ReactNativeFirebase.FirebaseApp, path: string[], conditions: Condition[], orderby: OrderBy[], callback: (data: any[]) => void, error?: (error: any) => void, limitasi?: number) => {
     const fixedPath = castPathToString(path)
     if (fixedPath.split("/").length % 2 == 0) {
       console.warn("path untuk akses Collection data tidak boleh berhenti di Doc [Firestore.get.collection]")
       return
     }
 
-    const database = getFirestore()
+    const database = getFirestore(app)
     let queryRef: FirebaseFirestoreTypes.Query = collection(database, fixedPath)
 
     queryRef = applyConditions(queryRef, conditions)
@@ -253,22 +340,23 @@ export default function UseFirestore() {
 
     let datas: any[] = []
     getDocs(queryRef).then((snap) => {
-      snap.docs.forEach((doc) => {
-        datas.push({ data: doc.data(), id: doc.id })
-      })
+      if (snap?.docs?.length > 0)
+        snap?.docs?.forEach?.((doc) => {
+          datas.push({ data: doc.data(), id: doc.id })
+        })
       callback(datas)
     }).catch(error)
   }
 
-  const getCollectionLimit = (path: string[], conditions: Condition[], orderby: OrderBy[], limitasi: number = 1, callback: (data: any[]) => void, error?: (error: any) => void) => {
-    getCollectionWhereOrderBy(path, conditions, orderby, callback, error, limitasi)
+  const getCollectionLimit = (app: ReactNativeFirebase.FirebaseApp, path: string[], conditions: Condition[], orderby: OrderBy[], limitasi: number = 1, callback: (data: any[]) => void, error?: (error: any) => void) => {
+    getCollectionWhereOrderBy(app, path, conditions, orderby, callback, error, limitasi)
   }
-  const getCollection = (path: string[], callback: (data: any[]) => void, error?: (error: any) => void) => {
-    getCollectionWhereOrderBy(path, [], [], callback, error)
+  const getCollection = (app: ReactNativeFirebase.FirebaseApp, path: string[], callback: (data: any[]) => void, error?: (error: any) => void) => {
+    getCollectionWhereOrderBy(app, path, [], [], callback, error)
   }
 
-  const getCollectionIds = (path: string[], conditions: Condition[], orderby: OrderBy[], callback: (ids: string[]) => void, error?: (error: any) => void) => {
-    getCollectionWhereOrderBy(path, conditions, orderby, (data) => {
+  const getCollectionIds = (app: ReactNativeFirebase.FirebaseApp, path: string[], conditions: Condition[], orderby: OrderBy[], callback: (ids: string[]) => void, error?: (error: any) => void) => {
+    getCollectionWhereOrderBy(app, path, conditions, orderby, (data) => {
       let ids: string[] = []
       data.forEach(doc => {
         ids.push(doc.id)
@@ -277,27 +365,27 @@ export default function UseFirestore() {
     }, error)
   }
 
-  const getCollectionWhere = (path: string[], conditions: Condition[], callback: (data: any[]) => void, error?: (error: any) => void) => {
-    getCollectionWhereOrderBy(path, conditions, [], callback, error)
+  const getCollectionWhere = (app: ReactNativeFirebase.FirebaseApp, path: string[], conditions: Condition[], callback: (data: any[]) => void, error?: (error: any) => void) => {
+    getCollectionWhereOrderBy(app, path, conditions, [], callback, error)
   }
 
-  const getCollectionOrderBy = (path: string[], orderby: OrderBy[], callback: (data: any[]) => void, error?: (error: any) => void) => {
-    getCollectionWhereOrderBy(path, [], orderby, callback, error)
+  const getCollectionOrderBy = (app: ReactNativeFirebase.FirebaseApp, path: string[], orderby: OrderBy[], callback: (data: any[]) => void, error?: (error: any) => void) => {
+    getCollectionWhereOrderBy(app, path, [], orderby, callback, error)
   }
 
-  const listenDocument = (path: string[], callback: (data: any | null) => void, error?: (error: any) => void): (() => void) => {
+  const listenDocument = (app: ReactNativeFirebase.FirebaseApp, path: string[], callback: (data: any | null) => void, error?: (error: any) => void): (() => void) => {
     const fixedPath = castPathToString(path);
     if (fixedPath.split("/").length % 2 !== 0) {
       console.warn("Path untuk akses Doc data tidak boleh berhenti di Collection [Firestore.listen.doc]");
       return () => { };
     }
 
-    const db = getFirestore();
+    const db = getFirestore(app);
     const docRef = doc(db, fixedPath);
 
     const unsubscribe = onSnapshot(docRef, (docs) => {
-      if (docs.exists()) {
-        callback({ data: docs.data(), id: docs.id });
+      if (docs?.exists?.()) {
+        callback({ data: docs?.data(), id: docs?.id });
       } else {
         callback(null);
       }
@@ -306,14 +394,14 @@ export default function UseFirestore() {
     return unsubscribe;
   }
 
-  const listenCollection = (path: string[], conditions: Condition[], orderby: OrderBy[], callback: (data: any) => void, error?: (error: any) => void): (() => void) => {
+  const listenCollection = (app: ReactNativeFirebase.FirebaseApp, path: string[], conditions: Condition[], orderby: OrderBy[], callback: (data: any) => void, error?: (error: any) => void): (() => void) => {
     const fixedPath = castPathToString(path);
     if (fixedPath.split("/").length % 2 === 0) {
       console.warn("Path untuk akses Collection data tidak boleh berhenti di Doc [Firestore.listen.collection]");
       return () => { };
     }
 
-    const database = getFirestore();
+    const database = getFirestore(app);
     let queryRef: FirebaseFirestoreTypes.Query = collection(database, fixedPath);
 
     queryRef = applyConditions(queryRef, conditions);
@@ -321,9 +409,9 @@ export default function UseFirestore() {
 
     const unsubscribe = onSnapshot(queryRef, (snaps) => {
       const datas: any[] = [];
-      if (!snaps?.empty) {
-        snaps.docs.forEach((doc) => {
-          datas.push({ data: doc.data(), id: doc.id });
+      if (!snaps?.empty && snaps?.docs?.length > 0) {
+        snaps?.docs?.forEach?.((doc) => {
+          datas.push({ data: doc?.data(), id: doc?.id });
         });
       }
       callback(datas);
@@ -333,7 +421,7 @@ export default function UseFirestore() {
   }
 
   const paginate = (
-
+    app: ReactNativeFirebase.FirebaseApp,
     isStartPage: boolean,
     path: string[],
     conditions: Condition[],
@@ -348,7 +436,7 @@ export default function UseFirestore() {
       return
     }
 
-    const db = getFirestore()
+    const db = getFirestore(app)
     let queryRef: FirebaseFirestoreTypes.Query = collection(db, fixedPath);
 
     queryRef = applyConditions(queryRef, conditions);
@@ -357,13 +445,13 @@ export default function UseFirestore() {
 
     let allData: any[] = []
     getDocs(queryRef).then((snap) => {
-      snap.docs.forEach((r) => {
+      snap?.docs?.forEach?.((r) => {
         allData.push(r.id)
       })
-      if (snap.docs.length > 0) {
-        lastVisible = snap.docs[snap.docs.length - 1];
+      if (snap?.docs?.length > 0) {
+        lastVisible = snap?.docs?.[snap?.docs?.length - 1];
       }
-      callback(allData, snap.empty)
+      callback(allData, snap?.empty)
     }).catch(error)
   }
 
@@ -404,6 +492,10 @@ export default function UseFirestore() {
   const generateId = (new Date().getTime() / 1000).toFixed(0) + "-" + makeid(5)
 
   return {
+    init,
+    instance,
+    getUserData,
+    logout,
     addDocument,
     getDocument,
     updateDocument,

@@ -7,7 +7,7 @@ import UseFirestore from '@/components/useFirestore';
 import LibInput, { LibInputRef } from '@/lib/input';
 import LibOtp from '@/lib/otp';
 import { useSignUp } from '@clerk/clerk-expo';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { createUserWithEmailAndPassword, getAuth } from '@react-native-firebase/auth';
 import { serverTimestamp } from '@react-native-firebase/firestore';
 import { router } from 'expo-router';
@@ -69,9 +69,10 @@ export default function AuthRegisterScreen() {
     try {
       await signUp.create({ emailAddress: email, password })
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
-      createUserWithEmailAndPassword(getAuth(), email, password).then((data) => {
+      const instance: any = UseFirestore().instance()
+      createUserWithEmailAndPassword(getAuth(instance), email, password).then((data) => {
         const id = UseFirestore().generateId
-        UseFirestore().addDocument(["genealogy", "genealogy", "users", id], {
+        UseFirestore().addDocument(instance, ["genealogy", "genealogy", "users", id], {
           id: id,
           name: name,
           email: email,
@@ -87,7 +88,7 @@ export default function AuthRegisterScreen() {
         if (code == "auth/email-already-in-use") {
           Alert.alert("Oops!", "The email address is already in use by another account")
         }
-        console.warn("error",message)
+        console.warn("error", message)
       })
     } catch (err: any) {
       setLoading(false)

@@ -6,7 +6,8 @@ import { Text, View } from "@/components/Themed";
 import UseFirestore from "@/components/useFirestore";
 import libImage from "@/lib/image";
 import LibInput, { LibInputRef } from "@/lib/input";
-import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { serverTimestamp } from "@react-native-firebase/firestore";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
@@ -24,12 +25,13 @@ export default function GenealogyAdd() {
   const inputRef = useRef<LibInputRef>(null)
   const modalRef = useRef<ComponentModalRef>(null);
   const jekel = ["m", "f"]
+  const instance: any = UseFirestore().instance()
 
   useEffect(() => loadData(), [])
 
   function loadData() {
     if (id && !!edit)
-      UseFirestore().getDocument(["genealogy", path_id, "member", String(id)], ({ data }) => {
+      UseFirestore().getDocument(instance, ["genealogy", path_id, "member", String(id)], ({ data }) => {
         setGender(data?.gender)
         setName(data?.name)
         if (data?.image && data?.image != "") {
@@ -49,7 +51,7 @@ export default function GenealogyAdd() {
     setLoading(true)
 
     if (isEdit) {
-      UseFirestore().updateDocument(["genealogy", path_id, "member", String(id)], [
+      UseFirestore().updateDocument(instance, ["genealogy", path_id, "member", String(id)], [
         { key: "name", value: name },
         { key: "gender", value: gender },
         { key: "image", value: image }
@@ -70,9 +72,9 @@ export default function GenealogyAdd() {
         data.rel_id = [key, id]
       }
 
-      UseFirestore().addDocument(["genealogy", path_id, "member", key], data, () => {
+      UseFirestore().addDocument(instance, ["genealogy", path_id, "member", key], data, () => {
         if (!!id) {
-          UseFirestore().updateDocument(["genealogy", path_id, "member", String(id)], [
+          UseFirestore().updateDocument(instance, ["genealogy", path_id, "member", String(id)], [
             { key: "rel_id", value: data?.rel_id },
             { key: "image", value: image }
           ], () => { })

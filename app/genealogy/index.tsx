@@ -3,7 +3,7 @@ import ComponentHeader from "@/components/Header";
 import ComponentScroll from "@/components/Scroll";
 import { Text, View } from "@/components/Themed";
 import UseFirestore from "@/components/useFirestore";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -22,7 +22,8 @@ export default function GenealogyIndex() {
   }, [])
 
   function load() {
-    UseFirestore().getCollectionOrderBy(["genealogy", path_id, "member"], [["created", "asc"]], (result) => {
+    const instance: any = UseFirestore().instance()
+    UseFirestore().getCollectionOrderBy(instance, ["genealogy", path_id, "member"], [["created", "asc"]], (result) => {
       result.forEach((v: any) => {
         res.push({ ...v.data })
       })

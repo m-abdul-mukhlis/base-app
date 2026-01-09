@@ -2,7 +2,7 @@ import { Text, View } from "@/components/Themed";
 import useStorage from "@/components/useStorage";
 import Utils from "@/constants/Utils";
 import LibInput, { LibInputRef } from "@/lib/input";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from "expo-router";
 import { useRef, useState } from "react";
 import { Alert, Dimensions, Pressable, ScrollView } from "react-native";
@@ -65,6 +65,7 @@ export default function ExinCategories_add() {
 
     let newData = [...oldData, post]
     useStorage.setItem(EXIN_KEY, JSON.stringify(newData))
+    router.back()
   }
 
   return (
@@ -86,8 +87,7 @@ export default function ExinCategories_add() {
           returnKeyType="next"
           autoCapitalize="none"
           placeholder="Add New Category"
-          style={{ fontSize: 12, paddingLeft: 10, color: "#000" }}
-          onChangeText={() => { }}
+          style={{ flex: 1, fontSize: 12, paddingLeft: 10, color: "#000" }}
         />
         <View style={{ marginTop: 20 }} />
         {

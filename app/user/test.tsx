@@ -1,6 +1,7 @@
+import useSafeState from "@/components/useSafeState";
 import { Canvas, ImageSVG, Line, RoundedRect, Skia, Text, useFont } from "@shopify/react-native-skia";
 import { useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo } from "react";
 import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
@@ -230,27 +231,16 @@ export default function UserTest() {
   const font = useFont(require("../../assets/fonts/Roboto-Regular.ttf"), fontSize);
   const { width, height } = useWindowDimensions();
 
-  // let newData: any[] = []
-  // try {
-  //   if (data) {
-  //     newData = typeof data === "string" ? JSON.parse(data) : data
-  //   }
-  // } catch (e) {
-  //   console.warn("Failed to parse old data:", e)
-  //   newData = []
-  // }
+  const tree = useMemo(() => parseFamilyData(JSON.parse(data || "[]")), [data])
+  const [scrollPos, setScrollPos] = useSafeState<any>({ x: 0, y: 0 });
 
-  // const tree = parseFamilyData(newData);
-  const tree = parseFamilyData(JSON.parse(data || "[]"));
-  const [scrollPos, setScrollPos] = useState({ x: 0, y: 0 });
-
-  const [expandedMap, setExpandedMap] = useState(() => {
+  const [expandedMap, setExpandedMap] = useSafeState<any>(() => {
     const map: Record<string, boolean> = {};
     if (tree) collectLabels(tree, map);
     return map;
   });
 
-  const layout = useMemo(() => (tree ? layoutTree(tree, expandedMap) : null), [expandedMap]);
+  const layout = useMemo(() => (tree ? layoutTree(tree, expandedMap) : null), [tree, expandedMap]);
   const { nodes, lines } = useMemo(() => layout ? flattenTree(layout, [], [], expandedMap) : { nodes: [], lines: [] }, [layout, expandedMap]);
 
   const canvasWidth = layout ? Math.max(width, layout.totalWidth) : width;
@@ -263,32 +253,51 @@ export default function UserTest() {
     return map;
   }, [tree]);
 
-  const handleTap = (x: number, y: number) => {
-    for (const node of nodes) {
-      const left = node.x + xShift;
-      const right = left + nodeWidth;
-      const top = node.y;
-      const bottom = top + nodeHeight;
+  const handleTap = useCallback(
+    (x: number, y: number) => {
+      const tapped = nodes.find((node) => {
+        const left = node.x + xShift;
+        const right = left + nodeWidth;
+        const top = node.y;
+        const bottom = top + nodeHeight;
+        return x >= left && x <= right && y >= top && y <= bottom;
+      });
 
-      if (x >= left && x <= right && y >= top && y <= bottom) {
-        const target = nodeMap[node.label];
+      if (tapped) {
+        const target = nodeMap[tapped.label];
         if (target?.children?.length) {
-          setExpandedMap((prev) => {
-            const next = { ...prev, [target.label]: true };
-            for (const child of target.children!) {
-              next[child.label] = false;
+          setExpandedMap((prev: any) => {
+            const next = { ...prev };
+            const isExpanded = !!prev[target.label];
+
+            if (isExpanded) {
+              // collapse node + all descendants
+              const collapseRecursive = (n: TreeNode) => {
+                next[n.label] = false;
+                n.children?.forEach(collapseRecursive);
+              };
+              collapseRecursive(target);
+            } else {
+              // expand only this node, collapse siblings
+              next[target.label] = true;
+              target.children!.forEach((child) => (next[child.label] = false));
             }
+
             return next;
           });
         }
-        break;
       }
-    }
-  };
+    },
+    [nodes, xShift, nodeMap]
+  );
 
-  const gesture = Gesture.Tap().onEnd((e) => {
-    runOnJS(handleTap)(e.x + scrollPos.x, e.y + scrollPos.y);
-  });
+  const gesture = useMemo(
+    () =>
+      Gesture.Tap().onEnd((e) => {
+        runOnJS(handleTap)(e.x + scrollPos.x, e.y + scrollPos.y);
+      }),
+    [handleTap, scrollPos]
+  );
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setScrollPos({
@@ -297,46 +306,59 @@ export default function UserTest() {
     });
   };
 
+  const lineElements = useMemo(
+    () =>
+      lines.map((line, idx) => (
+        <Line
+          key={`line-${idx}`}
+          p1={{ x: line.x1 + xShift, y: line.y1 }}
+          p2={{ x: line.x2 + xShift, y: line.y2 }}
+          color="#888"
+          strokeWidth={2}
+        />
+      )),
+    [lines, xShift]
+  );
+
+  const nodeElements = useMemo(
+    () =>
+      nodes.map((node, idx) => (
+        <React.Fragment key={`node-${idx}`}>
+          <RoundedRect
+            r={nodeWidth * 0.1}
+            x={node.x + xShift}
+            y={node.y}
+            width={nodeWidth}
+            height={nodeHeight}
+            color="#222"
+          />
+          <ImageSVG
+            svg={genderSVG[node.gender as keyof typeof genderSVG] || genderSVG.u}
+            x={node.x + xShift + nodeWidth / 2 - 25}
+            y={node.y + 10}
+            width={50}
+            height={50}
+          />
+          <Text
+            x={node.x + xShift + 5}
+            y={node.y + 74}
+            text={node.label.length > 10 ? node.label.slice(0, 10) + "…" : node.label}
+            font={font}
+            color="white"
+          />
+        </React.Fragment>
+      )),
+    [nodes, xShift, font]
+  );
+
   return font && layout && data ? (
     <GestureDetector gesture={gesture}>
       <ScrollView horizontal onScroll={onScroll} scrollEventThrottle={16}>
         <ScrollView onScroll={onScroll} scrollEventThrottle={16}>
           <Canvas style={{ width: canvasWidth, height: canvasHeight, marginTop: 30 }}>
-            {lines.map((line, idx) => (
-              <Line
-                key={`line-${idx}`}
-                p1={{ x: line.x1 + xShift, y: line.y1 }}
-                p2={{ x: line.x2 + xShift, y: line.y2 }}
-                color="#888"
-                strokeWidth={2}
-              />
-            ))}
-            {nodes.map((node, idx) => (
-              <React.Fragment key={`node-${idx}`}>
-                <RoundedRect
-                  r={nodeWidth * 0.1}
-                  x={node.x + xShift}
-                  y={node.y}
-                  width={nodeWidth}
-                  height={nodeHeight}
-                  color="#222"
-                />
-                <ImageSVG
-                  svg={genderSVG[node.gender as keyof typeof genderSVG] || genderSVG.u}
-                  x={node.x + xShift + nodeWidth / 2 - 25}
-                  y={node.y + 10}
-                  width={50}
-                  height={50}
-                />
-                <Text
-                  x={node.x + xShift + 5}
-                  y={node.y + 70 + 4}
-                  text={node.label.length > 10 ? node.label.slice(0, 10) + "…" : node.label}
-                  font={font}
-                  color="white"
-                />
-              </React.Fragment>
-            ))}
+            {lineElements}
+            {nodeElements}
+
           </Canvas>
         </ScrollView>
       </ScrollView>

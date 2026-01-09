@@ -2,7 +2,8 @@ import ComponentHeader from "@/components/Header";
 import ComponentScroll from "@/components/Scroll";
 import { Text, View } from "@/components/Themed";
 import UseFirestore from "@/components/useFirestore";
-import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
@@ -16,13 +17,15 @@ export default function GenealogyDetail() {
   const [result, setResult] = useState<any>()
   const [child, setChild] = useState<any>()
   const [parents, setParents] = useState<any>()
+  const instance: any = UseFirestore().instance()
+
 
   useFocusEffect(
     useCallback(loadData, [])
   );
 
   function loadData() {
-    UseFirestore().getDocument(["genealogy", path_id, "member", String(id)], ({ data }) => {
+    UseFirestore().getDocument(instance, ["genealogy", path_id, "member", String(id)], ({ data }) => {
       if (data?.id) {
         setResult(data)
         getData(data?.rel_id, data?.par_rel)
@@ -42,7 +45,7 @@ export default function GenealogyDetail() {
   function getRelations(rel_id: string) {
     const relation = rel_id?.split(",")
     // get relation
-    UseFirestore().getCollectionWhere(["genealogy", path_id, "member"], [["rel_id", "array-contains-any", relation]], (data) => {
+    UseFirestore().getCollectionWhere(instance, ["genealogy", path_id, "member"], [["rel_id", "array-contains-any", relation]], (data) => {
       if (data.length > 0) {
         const rel = data.filter((item: any) => item.id != id).map((item: any) => ({ ...item.data }))
         setRelation(rel)
@@ -50,7 +53,7 @@ export default function GenealogyDetail() {
     }, console.warn)
 
     //get children
-    UseFirestore().getCollectionWhere(["genealogy", path_id, "member"], [["par_rel", "array-contains-any", relation]], (data) => {
+    UseFirestore().getCollectionWhere(instance, ["genealogy", path_id, "member"], [["par_rel", "array-contains-any", relation]], (data) => {
       if (data.length > 0) {
         const chil = data.map((item: any) => ({ ...item.data }))
         setChild(chil)
@@ -60,7 +63,7 @@ export default function GenealogyDetail() {
 
   function getParents(par_rel: string) {
     const par = par_rel?.split(",")
-    UseFirestore().getCollectionWhere(["genealogy", path_id, "member"], [["id", "in", par]], (data) => {
+    UseFirestore().getCollectionWhere(instance, ["genealogy", path_id, "member"], [["id", "in", par]], (data) => {
       if (data.length > 0) {
         const pare = data.map((item: any) => ({ ...item.data }))
         setParents(pare)

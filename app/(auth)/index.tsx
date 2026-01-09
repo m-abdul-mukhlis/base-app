@@ -4,7 +4,7 @@ import { Text, View } from '@/components/Themed';
 import ComponentUpdate from '@/components/Update';
 import LibInput, { LibInputRef } from '@/lib/input';
 import { useSignIn } from '@clerk/clerk-expo';
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, TouchableOpacity } from 'react-native';

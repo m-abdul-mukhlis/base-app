@@ -1,7 +1,7 @@
 import { Text, View } from "@/components/Themed";
 import useStorage from "@/components/useStorage";
 import LibInput, { LibInputRef } from "@/lib/input";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from "expo-router";
 import moment from 'moment';
 import { useRef, useState } from "react";
@@ -96,6 +96,7 @@ export default function ExinAdd() {
     let oldData: any[] = getExpense()
     let newData = [...oldData, post]
     useStorage.setItem(EXIN_EXPENSE_KEY, JSON.stringify(newData))
+    router.back()
   }
 
   const btns = [
@@ -191,7 +192,7 @@ export default function ExinAdd() {
                 <View style={{ alignItems: 'center', justifyContent: 'center', width: 50, height: 50, borderRadius: 20, backgroundColor: item?.cat_color }}>
                   <Ionicons name={item?.cat_icon} size={26} color={"#f3f3f3"} />
                 </View>
-                <Text allowFontScaling={false} style={{ fontSize: 10, fontFamily: "Roboto-Regular",marginTop: 5 }} >{item?.cat_label}</Text>
+                <Text allowFontScaling={false} style={{ fontSize: 10, fontFamily: "Roboto-Regular", marginTop: 5 }} >{item?.cat_label}</Text>
               </Pressable>
             ))
           }
@@ -201,7 +202,7 @@ export default function ExinAdd() {
             <View style={{ alignItems: 'center', justifyContent: 'center', width: 50, height: 50, borderRadius: 20, backgroundColor: '#f2f2f2', borderWidth: 1, borderStyle: 'dashed' }}>
               <Ionicons name='add-outline' size={26} color={"#989898"} />
             </View>
-            <Text allowFontScaling={false} style={{ fontSize: 10, fontFamily: "Roboto-Regular",marginTop: 5 }} >{"Add"}</Text>
+            <Text allowFontScaling={false} style={{ fontSize: 10, fontFamily: "Roboto-Regular", marginTop: 5 }} >{"Add"}</Text>
           </Pressable>
         </View>
       </ScrollView>

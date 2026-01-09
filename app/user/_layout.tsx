@@ -22,7 +22,8 @@ export default function UserLayout() {
       } else {
         if (isSignedIn && email) {
           const password = UseFirestore().generatePassword(shorthash.unique(email), email)
-          UseFirestore().register(email, password, () => { })
+          const instance: any = UseFirestore().instance()
+          UseFirestore().register(instance, email, password, () => { })
         }
       }
     })
@@ -33,7 +34,8 @@ export default function UserLayout() {
 
   function updateLastLogin(email: string) {
     if (!userClass.get?.()?.email && email) {
-      UseFirestore().getCollectionWhere(["genealogy", "genealogy", "users"], [["email", "==", email]], (data) => {
+      const instance: any = UseFirestore().instance()
+      UseFirestore().getCollectionWhere(instance, ["genealogy", "genealogy", "users"], [["email", "==", email]], (data) => {
         if (data.length > 0) {
           userClass.set({ ...data[0].data })
         }

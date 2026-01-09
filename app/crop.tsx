@@ -1,6 +1,6 @@
 import { resolveNavigationResult } from "@/lib/navigation";
 import LibProgress from "@/lib/progress";
-import { MaterialIcons } from "@expo/vector-icons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as ImageManipulator from "expo-image-manipulator";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from 'react';

@@ -3,6 +3,7 @@ import { Alert, StyleSheet } from 'react-native';
 import ComponentButton from '@/components/Button';
 import { View } from '@/components/Themed';
 import ComponentUpdate from '@/components/Update';
+import UseFirestore from '@/components/useFirestore';
 import { useClerk } from '@clerk/clerk-expo';
 import { getAuth } from '@react-native-firebase/auth';
 import * as Linking from 'expo-linking';
@@ -38,7 +39,8 @@ export default function ModalScreen() {
               {
                 text: 'Logout',
                 onPress: () => {
-                  signOutGoogle().then(() => {
+                  signOutGoogle().then(async () => {
+                    await UseFirestore().logout()
                     userClass.delete()
                     Linking.openURL(Linking.createURL('/'))
                   })

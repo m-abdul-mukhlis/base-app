@@ -1,12 +1,16 @@
 import ComponentModal, { ComponentModalRef } from "@/components/Modal";
+import ComponentScroll from "@/components/Scroll";
 import { Text, View } from "@/components/Themed";
 import UseFirestore from "@/components/useFirestore";
 import libImage from "@/lib/image";
-import { FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, TouchableOpacity, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Pressable, TouchableOpacity, useWindowDimensions } from "react-native";
+import ImagePicker from "react-native-image-crop-picker";
 import userClass from "./class";
 
 export default function UserIndex() {
@@ -32,10 +36,24 @@ export default function UserIndex() {
   }
 
   useEffect(() => {
-    UseFirestore().getCollection(["genealogy"], (items) => {
+    loadData()
+  }, [])
+
+  function loadData() {
+    const instance: any = UseFirestore().instance()
+
+    UseFirestore().getCollection(instance, ["genealogy"], (items) => {
       setData(items.map((doc) => ({ ...doc.data, ...doc })))
     }, console.warn)
-  }, [])
+  }
+
+  if (data?.length == 0) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size={"large"} />
+      </View>
+    )
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -53,11 +71,11 @@ export default function UserIndex() {
           <Ionicons name="menu-outline" size={20} />
         </Pressable>
       </View>
-      <ScrollView>
+      <ComponentScroll onRefresh={loadData} >
 
         <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 15, flexWrap: "wrap" }}>
           {
-            data?.map((item: any, index: number) => (
+            data && data?.map?.((item: any, index: number) => (
               <TouchableOpacity key={index} onPress={() => {
                 // router.navigate("/genealogy")
                 router.push({
@@ -87,6 +105,18 @@ export default function UserIndex() {
             })
           }} style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="image-outline" size={60} color={"#909090"} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => {
+            ImagePicker.openCamera({
+              width: 400,
+              height: 400,
+              cropping: true,
+            }).then((image) => {
+              console.log(image);
+            });
+
+          }} style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="crop-outline" size={60} color={"#909090"} />
           </TouchableOpacity>
           <View style={{ width: itemWidth, height: itemWidth, backgroundColor: "#e6e6e6", marginRight: 10, marginBottom: 10, borderRadius: 5, alignItems: "center", justifyContent: "center" }}>
             <Image
@@ -121,7 +151,7 @@ export default function UserIndex() {
           {ic.map(Items)}
         </View>
 
-      </ScrollView>
+      </ComponentScroll>
       <ComponentModal ref={modalRef} onClose={() => { }}>
         <Text style={{ fontSize: 18 }}>Drag down to dismiss</Text>
       </ComponentModal>

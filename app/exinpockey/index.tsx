@@ -1,6 +1,6 @@
 import { Text, View } from '@/components/Themed';
 import Utils from '@/constants/Utils';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import moment from 'moment';
 import React from 'react';
@@ -104,7 +104,7 @@ export default function ExinIndex() {
         }
       </ScrollView>
 
-      <View style={{ position: "absolute", right: 20, bottom: 20 }}>
+      <View style={{ position: "absolute", right: 20, bottom: 50 }}>
         <Pressable onPress={() => {
           router.navigate("/exinpockey/add")
         }} style={{ alignItems: 'center', justifyContent: 'center', width: 50, height: 50, borderRadius: 25, backgroundColor: '#e6e6e6' }}>
